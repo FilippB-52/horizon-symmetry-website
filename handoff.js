@@ -188,6 +188,11 @@
     if (window.CaseView) window.CaseView.init(null);   // drop its listeners
     scrollTo(0, back);
     busy = false;
+
+    /* The hero was out of layout for as long as the case was open, which
+       leaves the Unicorn scene doing its pointer maths against a box it
+       no longer has. hero.js listens for this and puts it right. */
+    dispatchEvent(new Event("hs:home"));
   }
 
   /* --- routing ---------------------------------------------------------- */

@@ -786,7 +786,7 @@ body.menu-open { overflow: hidden; }
   z-index: 2;
   text-align: center;
   font-size: clamp(2.4rem, 5.4vw, 4.6rem);
-  margin-bottom: clamp(-8.5rem, -8vw, -2.5rem);
+  margin-bottom: clamp(-4.5rem, -4vw, -1.2rem);
 }
 
 /* Height is set rather than an aspect ratio: the source is drawn to
