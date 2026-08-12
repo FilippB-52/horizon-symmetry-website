@@ -18,7 +18,15 @@ window.CaseView = (function () {
 
   var live = null;         // listeners belonging to the case view on screen
 
-  var ARRIVE = "cubic-bezier(0.16, 1, 0.3, 1)";   // one easing for every arrival
+  var ARRIVE = "cubic-bezier(0.22, 0.72, 0.24, 1)";   // one easing for every arrival
+
+  /* Two-stage arrivals. A thing slides in from nothing, and by the time it
+     is in place it is only most of the way lit; the last of the opacity
+     comes up after it has stopped. Nothing lands at full strength on the
+     same frame it stops moving, which is what made the old entrance feel
+     abrupt even when the travel itself was eased. */
+  var SETTLED = 0.68;      // share of the run spent travelling
+  var ARRIVAL = 0.82;      // how lit it is at that point
 
   var still = window.matchMedia &&
               matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -162,14 +170,10 @@ window.CaseView = (function () {
     settle(root);
   }
 
-  /* Everything that is not a frame arrives from the left, row by row, so
-     the rail assembles rather than appearing.
-
-     The one exception is the body of the open fold. It holds the lede,
-     and the lede is the paragraph that has just flown across the screen
-     into that exact spot — sliding it now would pull it out from under
-     its own landing. So the open fold contributes only its header row,
-     and its copy is left where the flight put it. */
+  /* Everything that is not a frame arrives from the right, the side of
+     the screen the rail sits on, row by row, so the rail assembles rather
+     than appearing. The open fold comes in whole: nothing flies into it
+     from the landing page any more, so there is no landing to protect. */
   function settle(root) {
     if (still) return;
 
@@ -184,7 +188,7 @@ window.CaseView = (function () {
     if (head) rows.push(head);
 
     Array.prototype.forEach.call(root.querySelectorAll(".fold"), function (f) {
-      rows.push(f.classList.contains("is-open") ? f.querySelector(".fold__head") : f);
+      rows.push(f);
     });
 
     var up = root.querySelector(".upnext");
@@ -193,9 +197,10 @@ window.CaseView = (function () {
     rows.forEach(function (el, i) {
       if (!el) return;
       el.animate(
-        [ { opacity: 0, transform: "translateX(-38px)" },
-          { opacity: 1, transform: "none" } ],
-        { duration: 760, delay: 150 + i * 85, fill: "backwards", easing: ARRIVE });
+        [ { opacity: 0, transform: "translateX(54px)", offset: 0, easing: ARRIVE },
+          { opacity: ARRIVAL, transform: "translateX(0px)", offset: SETTLED },
+          { opacity: 1, transform: "translateX(0px)", offset: 1 } ],
+        { duration: 1180, delay: 170 + i * 105, fill: "backwards" });
     });
   }
 
@@ -217,9 +222,10 @@ window.CaseView = (function () {
     shot.__risen = true;
     if (still) return;
     shot.animate(
-      [ { opacity: 0, transform: "translateY(64px)" },
-        { opacity: 1, transform: "none" } ],
-      { duration: 820, delay: delay, fill: "backwards", easing: ARRIVE });
+      [ { opacity: 0, transform: "translateY(58px)", offset: 0, easing: ARRIVE },
+        { opacity: 0.85, transform: "translateY(0px)", offset: SETTLED },
+        { opacity: 1, transform: "translateY(0px)", offset: 1 } ],
+      { duration: 1240, delay: delay, fill: "backwards" });
   }
 
   function reveal(root, gallery) {
@@ -231,7 +237,7 @@ window.CaseView = (function () {
       (s.getBoundingClientRect().top < innerHeight ? near : far).push(s);
     });
 
-    near.forEach(function (s, i) { rise(s, 190 + i * 130); });
+    near.forEach(function (s, i) { rise(s, 210 + i * 155); });
 
     if (!far.length || !window.IntersectionObserver) {
       far.forEach(function (s) { rise(s, 0); });

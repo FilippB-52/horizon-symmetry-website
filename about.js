@@ -51,7 +51,7 @@
   var RADIUS_MAX = 130;
   var PUSH       = 0.85;      // overall displacement scale
   var RAMP       = 0.09;      // how fast the push fades in and out
-  var FEATHER_X  = 0.24;      // edge fade, share of width — sides dissolve early
+  var FEATHER_X  = 0;         // none: the field runs to the screen edges
   var FEATHER_T  = 0.10;      // top edge
   var FEATHER_B  = 0.22;      // bottom, deeper: the picture has to fall away
                               // into the copy sitting under it

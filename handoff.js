@@ -78,38 +78,9 @@
              width: r.width + "px", height: r.height + "px" };
   }
 
-  function type(cs) {
-    return {
-      font: cs.fontStyle + " " + cs.fontWeight + " " + cs.fontSize + "/" +
-            cs.lineHeight + " " + cs.fontFamily,
-      color: cs.color,
-      letterSpacing: cs.letterSpacing
-    };
-  }
-
-  function dress(p, t) {
-    p.style.font = t.font;
-    p.style.color = t.color;
-    p.style.letterSpacing = t.letterSpacing;
-  }
-
-  /* The copy may be mid-shuffle, in which case every character sits in a
-     strip beside two scrambled decoys and textContent would hand back all
-     three. work.js keeps the untouched markup on the panel. */
-  function words(para) {
-    var panel = para.closest && para.closest(".project");
-    if (panel && panel.__html) {
-      var tmp = document.createElement("div");
-      tmp.innerHTML = panel.__html;
-      var p = tmp.querySelector("p");
-      if (p) return p.textContent.replace(/\s+/g, " ").trim();
-    }
-    return para.textContent.replace(/\s+/g, " ").trim();
-  }
-
   /* --- opening --------------------------------------------------------- */
 
-  function open(url, card, para) {
+  function open(url, card) {
     back = window.scrollY;
 
     return load(url).then(function (html) {
@@ -118,12 +89,10 @@
       document.body.appendChild(v);
 
       var cover = v.querySelector(".shot__cover");
-      var lede  = v.querySelector(".fold__lede");
       if (!cover) throw new Error("nothing to fly to");
 
       // measured off the real thing, laid out at viewport size
       var toCover = cover.getBoundingClientRect();
-      var toLede  = lede && lede.getBoundingClientRect();
 
       if (!soft || !card) { commit(v, url); return; }
 
@@ -141,54 +110,23 @@
       ghost.style.borderRadius = radius;
       layer.appendChild(ghost);
 
-      var copy = null, oldT, newT, fromLede;
-      if (para && toLede) {
-        fromLede = para.getBoundingClientRect();
-        copy = document.createElement("div");
-        copy.className = "handoff__copy";
-        place(copy, fromLede);
-
-        oldT = document.createElement("p");
-        oldT.textContent = words(para);
-        dress(oldT, type(getComputedStyle(para)));
-
-        newT = document.createElement("p");
-        newT.textContent = lede.textContent.replace(/\s+/g, " ").trim();
-        dress(newT, type(getComputedStyle(lede)));
-        newT.style.opacity = "0";
-
-        copy.appendChild(oldT);
-        copy.appendChild(newT);
-        layer.appendChild(copy);
-      }
-
       document.body.appendChild(layer);
 
-      /* Hide the originals so nothing is doubled. The card goes by class,
+      /* Hide the original card so nothing is doubled. It goes by class,
          because work.js writes `visibility: visible` inline on every card
-         each frame and an inline style outranks a rule unless it insists.
-         The copy hides its *body*, since a shuffle landing mid-flight
-         rewrites that body's children. */
+         each frame and an inline style outranks a rule unless it insists. */
       card.classList.add("is-handoff");
-      if (para && para.parentNode) para.parentNode.style.visibility = "hidden";
 
       var opts = { duration: DUR, easing: EASE, fill: "forwards" };
       var run = ghost.animate(
         [ Object.assign(box(fromCover), { borderRadius: radius }),
           Object.assign(box(toCover), { borderRadius: "0px" }) ], opts);
 
-      if (copy) {
-        copy.animate([box(fromLede), box(toLede)], opts);
-        oldT.animate([{ opacity: 1 }, { opacity: 0 }],
-          { duration: DUR * 0.42, easing: "cubic-bezier(0.4,0,1,1)", fill: "forwards" });
-        newT.animate([{ opacity: 0 }, { opacity: 1 }],
-          { duration: DUR * 0.36, delay: DUR * 0.44,
-            easing: "cubic-bezier(0,0,0.2,1)", fill: "forwards" });
-      }
-
-      // everything that is not flying gets out of the way
+      /* Everything that is not flying gets out of the way. The copy beside
+         the card is part of that: it fades where it stands rather than
+         being carried across the screen. */
       home.animate([{ opacity: 1 }, { opacity: 0 }],
-        { duration: DUR * 0.5, easing: "cubic-bezier(0.4,0,1,1)", fill: "forwards" });
+        { duration: DUR * 0.46, easing: "cubic-bezier(0.33,0,0.67,1)", fill: "forwards" });
 
       var done = false;
       function land() {
@@ -245,8 +183,6 @@
       function (el) { el.remove(); });          // never leave a ghost behind
     Array.prototype.forEach.call(document.querySelectorAll(".is-handoff"),
       function (el) { el.classList.remove("is-handoff"); });
-    Array.prototype.forEach.call(document.querySelectorAll(".project__body"),
-      function (el) { el.style.visibility = ""; });
 
     document.title = title;
     if (window.CaseView) window.CaseView.init(null);   // drop its listeners
@@ -279,10 +215,7 @@
     if (st && st.raf) { cancelAnimationFrame(st.raf); st.raf = 0; }
     card.classList.add("is-sharp");
 
-    var panel = document.querySelector(".project.is-active");
-    var para  = panel && panel.querySelector(".project__body p");
-
-    open(card.href, card, para).catch(function () {
+    open(card.href, card).catch(function () {
       busy = false;
       location.href = card.href;                   // anything unexpected: just go
     });
@@ -314,7 +247,7 @@
       old.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" })
          .addEventListener("finish", function () {
            old.remove();
-           open(a.href, null, null).catch(function () { location.href = a.href; });
+           open(a.href, null).catch(function () { location.href = a.href; });
          });
     }
   });

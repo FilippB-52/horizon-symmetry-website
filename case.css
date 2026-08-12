@@ -219,10 +219,10 @@
 
 .rail__name {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(1.05rem, 1.15vw, 1.18rem);
-  letter-spacing: -0.01em;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(1.15rem, 1.28vw, 1.32rem);
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -355,9 +355,9 @@
 }
 
 .upnext__name {
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(1.05rem, 1.15vw, 1.18rem);
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(1.15rem, 1.28vw, 1.32rem);
 }
 
 .upnext__tag {

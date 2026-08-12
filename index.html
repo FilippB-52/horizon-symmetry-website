@@ -109,9 +109,12 @@
       <div class="work__stage">
         <div class="work__inner">
 
-          <!-- belongs to the stage, not to any one project, so it holds
-               still while the copy beneath it changes -->
+          <!-- heading, rule and copy travel together as one block, centred
+               against the card: the heading belongs to the paragraph under
+               it rather than to the top of the screen -->
+          <div class="work__copy">
           <p class="section-label work__label">Projects</p>
+          <hr class="work__rule">
 
           <div class="work__panel">
             <article class="project is-active" data-i="0" data-url="arcut.html">
@@ -173,6 +176,7 @@
                 <p class="project__services">Identity · Web · Product</p>
               </div>
             </article>
+          </div>
           </div>
 
           <!-- The deck. Cards are stacked in depth and moved by work.js:

@@ -27,6 +27,13 @@
   src: url("assets/fonts/Satoshi-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
 }
+/* Headings only. It has one weight and a bitmap skeleton, so it is never
+   asked to set a paragraph and never asked to fake a bold. */
+@font-face {
+  font-family: "PP Mondwest";
+  src: url("assets/fonts/PPMondwest-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
 
 :root {
   --void:       #000000;
@@ -38,6 +45,7 @@
   --violet-hot: #E6C4FA;
 
   --display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
+  --pixel:   "PP Mondwest", "Space Grotesk", system-ui, sans-serif;
   --body:    "Satoshi", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -300,11 +308,13 @@ body.menu-open { overflow: hidden; }
 
 .hero__title {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(2.1rem, 5.4vw, 4.75rem);
-  line-height: 1.02;
-  letter-spacing: -0.035em;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(2.35rem, 6vw, 5.3rem);
+  /* the pixel face carries taller ascenders than the grotesque did, and
+     .line clips anything the leading does not make room for */
+  line-height: 1.16;
+  letter-spacing: 0;
 }
 
 .line {
@@ -472,21 +482,39 @@ body.menu-open { overflow: hidden; }
    pinned work stage and the about field. */
 .section-label {
   margin: 0;
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(1.6rem, 3.1vw, 2.85rem);
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 3.4vw, 3.1rem);
   line-height: 1.05;
-  letter-spacing: -0.03em;
+  letter-spacing: 0;
   color: var(--ink);
 }
 
-/* Pinned to the stage rather than to any one project, so it holds still
-   while the copy beneath it changes. Left edge matches the copy column. */
-.work__label {
-  position: absolute;
+/* Heading, rule and copy are one block, centred in the column beside the
+   card. The heading is deliberately close to the paragraph: it reads as
+   the title of the copy under it rather than as a page furniture. */
+.work__copy {
+  position: relative;
   z-index: 3;
-  top: clamp(3rem, 11svh, 6rem);
-  left: var(--gutter);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.work__label {
+  font-size: clamp(2.4rem, 5.4vw, 4.6rem);
+  margin-bottom: clamp(0.7rem, 1.5vh, 1.1rem);
+}
+
+/* Runs the width of the copy under it, and no further. */
+.work__rule {
+  width: 100%;
+  max-width: 44ch;
+  height: 0;
+  margin: 0 0 clamp(1rem, 2.2vh, 1.6rem);
+  border: 0;
+  border-top: 1px solid var(--rule);
 }
 
 .work {
@@ -512,7 +540,7 @@ body.menu-open { overflow: hidden; }
 
 /* roughly 30 / 70 — the copy column is narrow so the card can be large */
 .work__inner {
-  position: relative;   /* the label anchors here */
+  position: relative;
   height: 100%;
   display: grid;
   grid-template-columns: minmax(0, 0.43fr) minmax(0, 1fr);
@@ -525,14 +553,14 @@ body.menu-open { overflow: hidden; }
 /* every project's copy is stacked in the same cell; only one is lit */
 .work__panel {
   position: relative;
+  display: grid;
   min-width: 0;
 }
 
 .project {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
   display: grid;
-  align-content: center;
+  align-content: start;
   min-width: 0;
   opacity: 0;
   visibility: hidden;
@@ -750,11 +778,15 @@ body.menu-open { overflow: hidden; }
   margin-inline: auto;
 }
 
-/* the label sits above the picture and clear of the flying points */
+/* Centred in the section and sitting *on* the picture: the negative margin
+   pulls the field up under it, so the top row of points crosses the type
+   instead of stopping short of it. */
 .about__wrap > .section-label {
   position: relative;
   z-index: 2;
-  margin-bottom: clamp(1.1rem, 2.6vh, 2rem);
+  text-align: center;
+  font-size: clamp(2.4rem, 5.4vw, 4.6rem);
+  margin-bottom: clamp(-8.5rem, -8vw, -2.5rem);
 }
 
 /* Height is set rather than an aspect ratio: the source is drawn to
@@ -762,7 +794,9 @@ body.menu-open { overflow: hidden; }
    where it was cropped. */
 .about__frame {
   position: relative;
-  width: 100%;
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
   height: clamp(17rem, 42vw, 48rem);
 }
 
@@ -827,13 +861,9 @@ body.menu-open { overflow: hidden; }
   object-fit: cover;
   transition: opacity 0.8s var(--ease);
   -webkit-mask-image:
-    linear-gradient(to right,  transparent, #000 24%, #000 76%, transparent),
     linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
           mask-image:
-    linear-gradient(to right,  transparent, #000 24%, #000 76%, transparent),
     linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
-  -webkit-mask-composite: source-in;
-          mask-composite: intersect;
 }
 .about__frame.is-live .about__fallback { opacity: 0; }
 
@@ -901,10 +931,10 @@ body.menu-open { overflow: hidden; }
 
 .contact__title {
   margin: 0 0 clamp(1.75rem, 4.5vh, 3rem);
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(1.6rem, 2.6vw, 2.4rem);
-  letter-spacing: -0.03em;
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(1.75rem, 2.9vw, 2.65rem);
+  letter-spacing: 0;
 }
 
 .contact__label {
@@ -1089,13 +1119,3 @@ body.case .masthead { display: none; }
   will-change: left, top, width, height;
 }
 
-.handoff__copy {
-  position: fixed;
-  will-change: left, top, width, height;
-}
-.handoff__copy p {
-  position: absolute;
-  inset: 0;
-  margin: 0;
-  text-wrap: pretty;
-}
