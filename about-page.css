@@ -1,0 +1,180 @@
+/* ===================================================================
+   Horizon Symmetry — about page
+
+   One column, generous measure, nothing competing for attention. Tokens,
+   fonts and the .cta come from styles.css; the top bar comes from
+   case.css, which is why the body carries .case.
+   =================================================================== */
+
+.studio {
+  --measure: 62ch;
+  max-width: 1180px;
+  margin-inline: auto;
+  padding:
+    calc(var(--bar) + clamp(3rem, 9vh, 7rem))
+    var(--gutter)
+    clamp(4rem, 12vh, 9rem);
+}
+
+/* ---------- opening ------------------------------------------------- */
+
+.studio__eyebrow { margin-bottom: clamp(1rem, 2.4vh, 1.75rem); }
+
+.studio__lede {
+  margin: 0;
+  max-width: 20ch;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(2.1rem, 5vw, 4.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.studio__intro {
+  max-width: var(--measure);
+  margin-top: clamp(1.5rem, 4vh, 2.75rem);
+}
+
+.studio__intro p,
+.studio__block p,
+.studio__team p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: clamp(1rem, 1.16vw, 1.18rem);
+  line-height: 1.62;
+  text-wrap: pretty;
+}
+.studio__intro p + p { margin-top: 1rem; }
+
+/* ---------- the picture --------------------------------------------- */
+
+/* Feathered rather than cropped to an edge, so it sits in the page the
+   same way the field does on the landing page. */
+.studio__shot {
+  margin: clamp(3rem, 9vh, 6.5rem) 0;
+}
+.studio__shot img {
+  display: block;
+  width: 100%;
+  height: clamp(14rem, 34vw, 30rem);
+  object-fit: cover;
+  -webkit-mask-image:
+    linear-gradient(to right,  transparent, #000 18%, #000 82%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+          mask-image:
+    linear-gradient(to right,  transparent, #000 18%, #000 82%, transparent),
+    linear-gradient(to bottom, transparent, #000 14%, #000 86%, transparent);
+  -webkit-mask-composite: source-in;
+          mask-composite: intersect;
+}
+
+/* ---------- the one line that carries the argument ------------------- */
+
+.studio__belief {
+  margin: clamp(2rem, 7vh, 5rem) 0 clamp(3rem, 10vh, 7rem);
+  padding-block: clamp(1.75rem, 5vh, 3rem);
+  border-block: 1px solid var(--rule);
+}
+.studio__belief p {
+  margin: 0;
+  max-width: 34ch;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 2.5vw, 2.1rem);
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* ---------- blocks --------------------------------------------------- */
+
+.studio__block { margin-bottom: clamp(3.5rem, 11vh, 8rem); }
+.studio__block .section-label { margin-bottom: clamp(1.75rem, 5vh, 3rem); }
+
+.studio__block h3 {
+  margin: 0 0 0.55rem;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.1rem, 1.5vw, 1.35rem);
+  letter-spacing: -0.015em;
+}
+
+.studio__list,
+.studio__steps,
+.studio__team {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: clamp(1.75rem, 4.5vw, 3.25rem);
+}
+
+.studio__list  { grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); }
+.studio__steps { grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); }
+.studio__team  { grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); }
+
+.studio__list > li,
+.studio__steps > li {
+  padding-top: clamp(0.9rem, 2vh, 1.25rem);
+  border-top: 1px solid var(--rule);
+}
+
+.studio__num {
+  display: block;
+  margin-bottom: 0.75rem;
+  color: var(--violet-hot);
+  font-family: var(--display);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+}
+
+/* the step number comes from the list itself, so the markup stays clean */
+.studio__steps { counter-reset: step; }
+.studio__steps > li { counter-increment: step; }
+.studio__steps > li h3::before {
+  content: counter(step, decimal-leading-zero);
+  display: block;
+  margin-bottom: 0.7rem;
+  color: var(--violet-hot);
+  font-size: 0.82rem;
+  letter-spacing: 0.16em;
+}
+
+.studio__role {
+  margin: 0 0 0.75rem !important;
+  color: var(--ink-faint) !important;
+  font-family: var(--display);
+  font-size: 0.8rem !important;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ---------- closing -------------------------------------------------- */
+
+.studio__cta {
+  padding-top: clamp(2.5rem, 8vh, 5rem);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+.studio__cta h2 {
+  margin: 0;
+  max-width: 24ch;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.4rem, 2.6vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+
+/* this page has no hero to wait for, so the button is simply here */
+.studio__cta .cta { opacity: 1; transform: none; transition-delay: 0s; }
+
+@media (max-width: 700px) {
+  .studio__cta { flex-direction: column; align-items: flex-start; }
+}

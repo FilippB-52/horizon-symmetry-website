@@ -1,0 +1,441 @@
+/* ===================================================================
+   Horizon Symmetry — case study
+
+   Built to the nonstop reference. Two fixed things and one moving one:
+   a slim bar across the top, a rail down the right that never scrolls,
+   and the gallery, which is the entire scroll of the page.
+
+   The rail carries everything verbal — project row, the four folds,
+   and the next project pinned to its floor. The gallery carries only
+   work, edge to edge, with a hairline of black between frames.
+
+   Tokens and fonts come from styles.css.
+   =================================================================== */
+
+.case {
+  /* the bar is sized around the landing page's logo, so the mark is the
+     same object on both — see .brand__mark in styles.css */
+  --bar:       clamp(4.6rem, 6.2vw, 6rem);
+  --bar-clear: clamp(2rem, 4.8vh, 4.25rem);    /* air under the bar */
+  --bar-text:  clamp(0.98rem, 1.1vw, 1.08rem); /* matches body copy */
+  --rail: clamp(21rem, 34vw, 44rem);  /* right rail */
+  --gap:  10px;                       /* between frames, and to the edges */
+  background: var(--void);
+}
+
+/* ---------- top bar -------------------------------------------------- */
+
+.bar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 30;
+  height: var(--bar);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  /* left lines up with the gallery's edge, right with the rail's copy */
+  padding-left: var(--gap);
+  padding-right: clamp(0.85rem, 1.1vw, 1.15rem);
+  background: var(--void);
+}
+
+.bar__brand {
+  display: inline-flex;
+  justify-self: start;
+  border-radius: 0.35rem;
+  text-decoration: none;
+}
+/* the same height as .brand__mark on the landing page */
+.bar__brand img {
+  display: block;
+  width: auto;
+  height: clamp(2.5rem, 3.5vw, 3.25rem);
+  transition: transform 0.5s var(--ease-out), filter 0.5s var(--ease);
+}
+.bar__brand:hover img {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 30px rgba(230, 196, 250, 0.55));
+}
+
+.bar__nav {
+  display: flex;
+  gap: clamp(1.4rem, 2.6vw, 2.6rem);
+  justify-self: center;
+}
+
+.bar__nav a {
+  color: var(--ink-dim);
+  font-size: var(--bar-text);
+  text-decoration: none;
+  transition: color 0.3s var(--ease);
+}
+.bar__nav a:hover { color: var(--ink); }
+.bar__nav a[aria-current="page"] { color: var(--ink); }
+
+/* Carries the landing page's call to action: a pill that fills from the
+   left on hover. Kept in step with .cta in styles.css. */
+.bar__end {
+  position: relative;
+  z-index: 1;                  /* contains the fill, which sits at -1 */
+  overflow: hidden;            /* the fill is a rectangle; this rounds it */
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 2.9em;
+  padding: 0 1.6em;
+  border: 1px solid rgba(230, 196, 250, 0.42);
+  border-radius: 30em;
+  color: var(--violet-hot);
+  font-size: var(--bar-text);
+  font-weight: 500;
+  letter-spacing: 0.012em;
+  text-decoration: none;
+  white-space: nowrap;
+  box-shadow:
+    6px 6px 16px rgba(0, 0, 0, 0.8),
+    -6px -6px 16px rgba(155, 59, 224, 0.14);
+  transition:
+    color 0.5s ease,
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
+}
+
+.bar__end::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 auto 0 0;
+  width: 0;
+  background-image: linear-gradient(to right, var(--violet) 0%, var(--violet-hot) 100%);
+  transition: width 0.55s var(--ease-out);
+}
+.bar__end:hover::before,
+.bar__end:focus-visible::before { width: 100%; }
+
+.bar__end:hover,
+.bar__end:focus-visible {
+  color: var(--void);
+  border-color: transparent;
+  box-shadow:
+    8px 8px 22px rgba(0, 0, 0, 0.85),
+    -8px -8px 22px rgba(155, 59, 224, 0.22);
+}
+.bar__end:focus-visible { outline: 2px solid var(--violet-hot); outline-offset: 3px; }
+
+.bar__end svg {
+  width: 0.9em;
+  height: 0.9em;
+  transition: transform 0.45s var(--ease-out);
+}
+.bar__end:hover svg { transform: translate(2px, -2px); }
+
+/* ---------- gallery -------------------------------------------------- */
+
+/* The frames are placeholders: swap each .ph for an <img> and the
+   layout does not change — .shot img is already sized to cover. */
+
+.gallery {
+  margin-right: var(--rail);
+  padding: calc(var(--bar) + var(--bar-clear)) var(--gap) var(--gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.pair {
+  display: flex;
+  gap: var(--gap);
+}
+.pair .shot { flex: 1; min-width: 0; }
+
+.shot {
+  margin: 0;
+  overflow: hidden;
+  background: #0C0C0F;
+  height: 72svh;
+}
+
+.shot--wide { height: 46svh; }
+.shot--half { height: 58svh; }
+
+.shot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* the stand-in: a flat block that says which frame it is */
+.ph {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  background: var(--accent, #23303A);
+  color: rgba(255, 255, 255, 0.82);
+  font-family: var(--display);
+  font-size: clamp(1rem, 1.5vw, 1.35rem);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+/* ---------- rail ----------------------------------------------------- */
+
+.rail {
+  position: fixed;
+  top: var(--bar);
+  right: 0;
+  bottom: 0;
+  width: var(--rail);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding:
+    var(--bar-clear)
+    clamp(0.85rem, 1.1vw, 1.15rem)
+    clamp(0.85rem, 1.1vw, 1.15rem);
+  border-left: 1px solid var(--rule);
+  background: var(--void);
+}
+
+/* ---------- project row ---------------------------------------------- */
+
+.rail__head {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: clamp(0.55rem, 1.1vh, 0.75rem) 0;
+}
+
+.rail__mark {
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 0.3rem;
+  background: var(--accent, var(--violet));
+  flex: 0 0 auto;
+}
+
+.rail__name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.05rem, 1.15vw, 1.18rem);
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* the tagline sits in its own column so it lines up with the one in the
+   next-project row at the bottom of the rail */
+.rail__tag {
+  margin: 0;
+  padding-left: clamp(0.5rem, 2.5vw, 2.6rem);
+  color: var(--ink-dim);
+  font-size: clamp(0.95rem, 1.05vw, 1.06rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail__year {
+  color: var(--ink-dim);
+  font-size: clamp(0.95rem, 1.05vw, 1.06rem);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- folds ---------------------------------------------------- */
+
+.folds { border-top: 1px solid var(--rule); }
+
+.fold { border-bottom: 1px solid var(--rule); }
+
+/* the heading is here for structure only — the button carries the type,
+   and it inherits, so h2's own margin and weight have to go */
+.fold h2 {
+  margin: 0;
+  font-size: inherit;
+  font-weight: 400;
+}
+
+.fold__head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 1rem;
+  padding: clamp(0.45rem, 0.9vh, 0.62rem) 0;
+  background: none;
+  border: 0;
+  color: var(--ink-dim);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.3s var(--ease);
+}
+.fold__head:hover { color: var(--ink); }
+.fold.is-open .fold__head { color: var(--ink); }
+
+.fold__name {
+  font-size: clamp(1.02rem, 1.12vw, 1.14rem);
+  letter-spacing: -0.005em;
+}
+
+/* a plus that loses its upright to become a minus */
+.fold__sign {
+  position: relative;
+  width: 0.72rem;
+  height: 0.72rem;
+}
+.fold__sign::before,
+.fold__sign::after {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto 0;
+  height: 1px;
+  background: currentColor;
+  transition: transform 0.4s var(--ease-out), opacity 0.25s var(--ease);
+}
+.fold__sign::after { transform: rotate(90deg); }
+.fold.is-open .fold__sign::after { transform: rotate(90deg) scaleX(0); opacity: 0; }
+
+/* 0fr → 1fr animates the real height without measuring it */
+.fold__wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.55s var(--ease-out);
+}
+.fold.is-open .fold__wrap { grid-template-rows: 1fr; }
+
+.fold__inner {
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease);
+}
+.fold.is-open .fold__inner {
+  opacity: 1;
+  transition-delay: 0.1s;
+}
+
+.fold__body { padding-bottom: clamp(0.8rem, 1.7vh, 1.1rem); }
+
+.fold__body p {
+  margin: 0;
+  color: var(--ink-dim);
+  font-size: clamp(0.98rem, 1.08vw, 1.08rem);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.fold__body p + p { margin-top: 0.75rem; }
+
+/* ---------- next project --------------------------------------------- */
+
+/* pinned to the rail's floor, always in view */
+.upnext {
+  display: block;
+  margin-top: auto;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.upnext__label {
+  display: block;
+  padding-bottom: clamp(0.6rem, 1.4vh, 0.9rem);
+  font-size: clamp(1.05rem, 1.15vw, 1.18rem);
+  color: var(--ink);
+}
+
+.upnext__row {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding-top: clamp(0.65rem, 1.4vh, 0.95rem);
+  border-top: 1px solid var(--rule);
+}
+
+.upnext__name {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1.05rem, 1.15vw, 1.18rem);
+}
+
+.upnext__tag {
+  padding-left: clamp(0.5rem, 2.5vw, 2.6rem);
+  color: var(--ink-dim);
+  font-size: clamp(0.95rem, 1.05vw, 1.06rem);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upnext__year {
+  color: var(--ink-dim);
+  font-size: clamp(0.95rem, 1.05vw, 1.06rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.upnext__go {
+  width: 0.85rem;
+  height: 0.85rem;
+  color: var(--ink-dim);
+  transition: transform 0.4s var(--ease-out), color 0.3s var(--ease);
+}
+.upnext:hover .upnext__go {
+  color: var(--ink);
+  transform: translate(2px, -2px);
+}
+
+/* ---------- narrow screens ------------------------------------------- */
+
+@media (max-width: 900px) {
+  .case { --rail: 0px; }
+
+  .bar__nav { gap: 1rem; }
+  .bar__end span { display: none; }
+
+  /* The rail stops being a rail. Dissolving it lets its two halves take
+     their own places in the page: the argument above the work, the next
+     project at the very bottom where it belongs on a phone. */
+  .case main { display: flex; flex-direction: column; }
+  .rail { display: contents; }
+
+  .rail__top {
+    order: 1;
+    padding: calc(var(--bar) + var(--bar-clear)) var(--gutter) 0;
+  }
+
+  .gallery {
+    order: 2;
+    margin-right: 0;
+    padding-top: clamp(1.5rem, 4vh, 2.5rem);
+  }
+
+  .upnext {
+    order: 3;
+    padding: clamp(1.6rem, 5vh, 2.6rem) var(--gutter) clamp(2rem, 6vh, 3rem);
+  }
+
+  .shot,
+  .shot--half { height: 54svh; }
+  .shot--wide { height: 38svh; }
+
+  .pair { flex-direction: column; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold__wrap { transition: none; }
+}
+
+
+
+/* the two elements the landing page hands over to */
+/* the two elements the landing page hands over to; handoff.js measures
+   them on a hidden copy of this page before it animates anything */
+.shot__cover {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+

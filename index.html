@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<title>Horizon Symmetry — Digital Presence Studio</title>
+<meta name="description" content="Premium digital identities for early-stage founders, designed to signal credibility, accelerate investor conversations, and launch with the authority of an established brand.">
+<meta name="theme-color" content="#000000">
+
+<link rel="icon" href="assets/favicon.ico" sizes="32x32">
+<link rel="icon" href="assets/favicon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="assets/favicon-180.png">
+
+<meta property="og:type" content="website">
+<meta property="og:title" content="Horizon Symmetry — Digital Presence Studio">
+<meta property="og:description" content="We build the face of your startup before you've made it.">
+<meta property="og:image" content="assets/hero-reveal-1440.jpg">
+
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://assets.unicorn.studio" crossorigin>
+<link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
+
+<link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="styles.css">
+<!-- loaded here only so the case layout can be measured before opening it -->
+<link rel="stylesheet" href="case.css">
+</head>
+
+<body>
+<a class="skip-link" href="#hero-content">Skip to content</a>
+
+<header class="masthead">
+  <a class="brand" href="/" aria-label="Horizon Symmetry — home">
+    <img class="brand__mark" src="assets/logo-mark.png" alt="" width="1039" height="867" decoding="async">
+  </a>
+
+  <button class="burger" type="button" aria-expanded="false" aria-controls="menu">
+    <span class="burger__box" aria-hidden="true"><span></span><span></span></span>
+    <span class="burger__text">Menu</span>
+  </button>
+</header>
+
+<!-- Opened by menu.js. Inert and untabbable until then, so it never sits
+     invisibly in front of the hero collecting clicks. -->
+<nav class="menu" id="menu" aria-label="Sections" hidden>
+  <ul class="menu__list">
+    <li><a href="#hero-content"><span>Home</span></a></li>
+    <li><a href="#work"><span>Projects</span></a></li>
+    <li><a href="about.html"><span>About</span></a></li>
+    <li><a href="#contact"><span>Contact</span></a></li>
+  </ul>
+
+  <div class="menu__foot">
+    <a href="https://www.linkedin.com/company/horizon-symmetry" target="_blank" rel="noopener">LinkedIn</a>
+    <a href="https://www.instagram.com/horizonsymmetry" target="_blank" rel="noopener">Instagram</a>
+    <a href="mailto:horizonsymmetrystudio@gmail.com">horizonsymmetrystudio@gmail.com</a>
+  </div>
+</nav>
+
+<main>
+  <section class="hero" aria-labelledby="hero-title">
+
+    <!-- Unicorn Studio scene: the reveal. Sits behind everything and takes
+         the pointer, so every overlay above it must stay pointer-transparent. -->
+    <div class="hero__scene" data-us-project="rKv14eUBrORETKYVXzBe"
+         data-us-dpi="1.5" data-us-scale="1" data-us-fps="60"
+         data-us-alttext="A lone figure before a violet black hole"
+         data-us-arialabel="A lone figure before a violet black hole"
+         aria-hidden="true"></div>
+
+    <div class="hero__content" id="hero-content">
+      <h1 class="hero__title" id="hero-title">
+        <span class="line"><span class="line__inner">Where Vision</span></span>
+        <span class="line"><span class="line__inner">Becomes Reality</span></span>
+      </h1>
+
+      <p class="hero__sub">
+        Guided by strategy, built with precision. We design brands, products,
+        and digital systems that transform ideas into meaningful ventures.
+      </p>
+    </div>
+
+    <div class="hero__action">
+      <a class="cta" href="#contact">
+        <span class="cta__label">Begin Your Journey</span>
+        <span class="cta__arrow" aria-hidden="true">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/>
+          </svg>
+        </span>
+      </a>
+    </div>
+
+    <!-- softens the cut from starfield to black at the section edge -->
+    <div class="hero__fade" aria-hidden="true"></div>
+
+  </section>
+
+  <!-- The stage pins to the viewport for the whole section and never moves.
+       Scrolling slides the deck instead: cards rise from below, the front one
+       centred and lit, its neighbours set back in depth and dimmed. -->
+  <section class="work" id="work" aria-label="Selected work" style="--n: 5">
+    <div class="work__track">
+      <div class="work__stage">
+        <div class="work__inner">
+
+          <!-- belongs to the stage, not to any one project, so it holds
+               still while the copy beneath it changes -->
+          <p class="section-label work__label">Projects</p>
+
+          <div class="work__panel">
+            <article class="project is-active" data-i="0" data-url="arcut.html">
+              <h3 class="project__name">Ar/Cut</h3>
+              <div class="project__body">
+                <p>
+                  Ar/Cut turns long streams into short highlights automatically. We built
+                  every surface it has: the logo, the type system, the brand, the marketing
+                  site, and the product itself. The most complete engagement we have run.
+                </p>
+                <p class="project__services">Identity · Web · Product</p>
+              </div>
+            </article>
+
+            <article class="project" data-i="1" data-url="crude.html">
+              <h3 class="project__name">CRUDE</h3>
+              <div class="project__body">
+                <p>
+                  A politics and economics newsletter that trades in unfiltered takes, so the
+                  identity had to read sharp and editorial with no corporate softness. Logo in
+                  dark and light, a full colour system, and fifteen applications to launch on.
+                </p>
+                <p class="project__services">Identity · Colour system · Art direction</p>
+              </div>
+            </article>
+
+            <article class="project" data-i="2" data-url="komnata.html">
+              <h3 class="project__name">KOMNATA</h3>
+              <div class="project__body">
+                <p>
+                  A Russian party concept running nights across Madrid, now opening up to a
+                  wider crowd. We ran the social output and designed the language of the
+                  events: poster series, DJ lineups, teasers, and the Broadcast Night identity.
+                </p>
+                <p class="project__services">Social · Event design · Art direction</p>
+              </div>
+            </article>
+
+            <article class="project" data-i="3" data-url="ale.html">
+              <h3 class="project__name">Ale</h3>
+              <div class="project__body">
+                <p>
+                  Placeholder description. Swap this for what Ale actually is, what the
+                  problem was, and what we shipped, in roughly this much room.
+                </p>
+                <p class="project__services">Services · To · Confirm</p>
+              </div>
+            </article>
+
+            <article class="project" data-i="4" data-url="vilmoria.html">
+              <h3 class="project__name">Vilmoria</h3>
+              <div class="project__body">
+                <p>
+                  Placeholder description for the Vilmoria site. Wine sells on feeling, so the
+                  build leaned on photography and pace rather than a spec sheet. Replace this
+                  with the real story when you have it.
+                </p>
+                <p class="project__services">Web design · Development</p>
+              </div>
+            </article>
+          </div>
+
+          <!-- The deck. Cards are stacked in depth and moved by work.js:
+               the current one sits centred, its neighbours hang above and
+               below it, further back and dimmer. -->
+          <div class="deck">
+            <a class="card" data-i="0" href="arcut.html"
+               aria-label="Open the Ar/Cut case study">
+              <img src="assets/work/arcut.jpg" alt="Ar/Cut"
+                   width="1600" height="1000" decoding="async">
+            </a>
+            <a class="card" data-i="1" href="crude.html"
+               aria-label="Open the CRUDE case study">
+              <img src="assets/work/crude.jpg" alt="CRUDE"
+                   width="1600" height="1000" decoding="async">
+            </a>
+            <a class="card" data-i="2" href="komnata.html"
+               aria-label="Open the KOMNATA case study">
+              <img src="assets/work/komnata.jpg" alt="KOMNATA"
+                   width="1600" height="1000" decoding="async">
+            </a>
+            <a class="card" data-i="3" href="ale.html"
+               aria-label="Open the Ale case study">
+              <img src="assets/work/ale.jpg" alt="Ale"
+                   width="1600" height="1000" decoding="async">
+            </a>
+            <a class="card" data-i="4" href="vilmoria.html"
+               aria-label="Open the Vilmoria case study">
+              <img src="assets/work/vilmoria.jpg" alt="Vilmoria"
+                   width="1600" height="1000" decoding="async">
+            </a>
+          </div>
+        </div>
+
+        </div>
+      </div>
+  </section>
+
+  <!-- The image is redrawn as one GPU point per device pixel; the <img> is
+       both the source and the fallback, and stays if WebGL2 is unavailable.
+       The points assemble once, the first time this scrolls into view. -->
+  <section class="about" id="about" aria-labelledby="about-title"
+           data-src="assets/team-dots.jpg">
+    <div class="about__wrap">
+      <h2 class="section-label" id="about-title">Our Team</h2>
+
+      <div class="about__frame">
+        <img class="about__fallback" src="assets/team-dots.jpg"
+             alt="The Horizon Symmetry team, rendered as a field of particles"
+             width="3200" height="1786" loading="lazy" decoding="async">
+        <canvas class="about__canvas" aria-hidden="true"></canvas>
+      </div>
+
+      <div class="about__foot">
+        <p class="about__text">
+          We are a small studio in Madrid building the digital presence of
+          early-stage companies: the identity, the site, and the product
+          surfaces around them. The work is made to hold up in front of
+          investors and first customers long before a company looks the part.
+        </p>
+
+        <div class="about__action">
+          <a class="cta" href="about.html">
+            <span class="cta__label">Learn about us</span>
+            <span class="cta__arrow" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/>
+              </svg>
+            </span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="contact" id="contact" aria-labelledby="contact-title">
+    <div class="contact__horizon" aria-hidden="true"></div>
+
+    <div class="contact__grid">
+      <div class="contact__col">
+        <h2 class="contact__title" id="contact-title">Stay connected</h2>
+        <ul class="contact__social">
+          <li>
+            <a href="https://www.linkedin.com/company/horizon-symmetry" target="_blank" rel="noopener">
+              <span>LinkedIn</span>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 10h12M10.5 4.5 16 10l-5.5 5.5"/>
+              </svg>
+            </a>
+          </li>
+          <li>
+            <a href="https://www.instagram.com/horizonsymmetry" target="_blank" rel="noopener">
+              <span>Instagram</span>
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 10h12M10.5 4.5 16 10l-5.5 5.5"/>
+              </svg>
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <div class="contact__col">
+        <h3 class="contact__label">Main links</h3>
+        <ul class="contact__links">
+          <!-- fills column-first: Home / Projects / Meeting, then Contact us -->
+          <li><a href="#hero-content">Home</a></li>
+          <li><a href="#work">Projects</a></li>
+          <li><a href="https://cal.com/horizon-symmetry" target="_blank" rel="noopener">Meeting</a></li>
+          <li><a href="#contact">Contact us</a></li>
+        </ul>
+      </div>
+
+      <div class="contact__col">
+        <h3 class="contact__label">Get in touch</h3>
+        <a class="contact__email" href="mailto:horizonsymmetrystudio@gmail.com">horizonsymmetrystudio@gmail.com</a>
+      </div>
+    </div>
+
+    <!-- The mark is drawn on a deforming mesh; the <img> is its source and
+         its fallback, and stays if WebGL2 is unavailable. -->
+    <div class="contact__mark">
+      <div class="mesh">
+        <canvas class="mesh__canvas" aria-hidden="true"></canvas>
+        <img class="mesh__img" src="assets/logo-mark.png" alt="Horizon Symmetry"
+             width="306" height="256" loading="lazy" decoding="async">
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+/* Unicorn Studio loader — verbatim from the project embed */
+!function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
+</script>
+<script src="hero.js" defer></script>
+<script src="menu.js" defer></script>
+<script src="work.js" defer></script>
+<script src="lens.js" defer></script>
+<!-- the case view is opened in place, so its behaviour lives here too -->
+<script src="case.js" defer></script>
+<script src="handoff.js" defer></script>
+<script src="about.js" defer></script>
+<script src="mesh.js" defer></script>
+</body>
+</html>
