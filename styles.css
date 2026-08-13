@@ -504,7 +504,7 @@ body.menu-open { overflow: hidden; }
      that cannot read image-set. */
   .hero__still {
     position: absolute;
-    top: clamp(1.5rem, 5svh, 3.5rem);
+    top: clamp(0.35rem, 1.6svh, 1.25rem);
     right: 0;
     bottom: auto;
     left: 0;
@@ -535,12 +535,15 @@ body.menu-open { overflow: hidden; }
       rgba(0, 0, 0, 0) 100%);
   }
 
-  /* Nothing crosses the disc. The heading holds the top of the screen, the
-     paragraph is pushed to the foot of the hero above the button, and the
-     artwork has the whole band between them to itself. */
+  /* Nothing crosses the disc, and the disc sits between the two blocks of
+     copy at the same distance from each. The three offsets here are one
+     measurement, not three: the heading comes down far enough to clear the
+     masthead, the paragraph is held off the foot of the hero, and where
+     they land is what makes the gap above the disc and the gap below it
+     equal. Moving one without the others closes that. */
   .hero__content {
-    top: clamp(5.5rem, 12svh, 7.5rem);
-    bottom: clamp(9rem, 19svh, 12rem);
+    top: clamp(7rem, 18svh, 11rem);
+    bottom: clamp(6.5rem, 15svh, 9.5rem);
     left: var(--gutter);
     right: var(--gutter);
     width: auto;
@@ -549,6 +552,9 @@ body.menu-open { overflow: hidden; }
     flex-direction: column;
   }
   .hero__sub { margin-top: auto; }
+
+  /* and the button sits clear of the paragraph rather than under it */
+  .hero__action { bottom: clamp(1.75rem, 5svh, 3.5rem); }
 }
 
 @media (max-width: 560px) {
