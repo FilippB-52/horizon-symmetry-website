@@ -56,16 +56,18 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-/* The page moves in one direction and no other: no pinch, no double-tap
-   zoom, no sideways rubber-band, no text dragged out of a heading. Every
-   scene here is measured against the viewport it was given, and all of
-   those gestures move the page under artwork that has already been laid
-   out. lock.js adds the one piece iOS only answers to in script. */
+/* The page holds still: it does not drift sideways, and a double tap on a
+   heading does not zoom it.
+
+   Pinch is deliberately left alone. Capping the scale is what strands a
+   phone at whatever zoom it happened to reach, with no gesture left to
+   undo it, and no layout is worth that. `manipulation` takes away the
+   double tap, which is the accident; the pinch stays as the way back. */
 html {
   -webkit-text-size-adjust: 100%;
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
+  touch-action: manipulation;
 }
 
 body {
@@ -80,7 +82,6 @@ body {
      breaks position:sticky for the work stack */
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: pan-y;
   -webkit-user-select: none;
           user-select: none;
   -webkit-touch-callout: none;
