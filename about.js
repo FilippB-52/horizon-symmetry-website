@@ -513,6 +513,12 @@
 
   if (!link()) return;
 
+  /* Everything that can fail outright has now passed, so the copy under
+     the field is allowed to wait for its entrance. Until this class
+     lands it is simply visible — a section that cannot draw its points
+     must still be able to say who we are. */
+  section.classList.add("is-armed");
+
   var ro = new ResizeObserver(function (entries) {
     var r = entries[0] && entries[0].contentRect;
     if (!r || !r.width || !r.height) return;
@@ -541,6 +547,11 @@
     if (!entries[0].isIntersecting) return;
     obs.disconnect();
     enter();
+    /* enter() waits on the samples, and the sampling can still be beaten
+       by a decode that never lands or a phone that will not give up the
+       memory for it. The copy does not wait that long: on screen and
+       still hidden after this, it comes in regardless of the points. */
+    setTimeout(function () { section.classList.add("is-in"); }, 2200);
   }, { rootMargin: "-18% 0px -18% 0px" }).observe(section);
 
   // Off screen there is nothing to animate; the parked frame holds.

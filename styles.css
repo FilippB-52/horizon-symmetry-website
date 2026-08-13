@@ -844,7 +844,9 @@ body.menu-open { overflow: hidden; }
     top: 0;
     background: var(--void);
     margin-inline: calc(var(--gutter) * -1);
-    padding: clamp(2.5rem, 7.5vh, 4.5rem) var(--gutter) clamp(0.75rem, 2vh, 1.25rem);
+    /* held near the top of the screen: every pixel this block does not
+       take is a pixel of cover you can see under it */
+    padding: clamp(1.4rem, 4vh, 2.5rem) var(--gutter) clamp(0.6rem, 1.6vh, 1rem);
     justify-content: flex-start;
   }
   .work__copy::after {
@@ -1028,9 +1030,14 @@ body.menu-open { overflow: hidden; }
   flex: none;
 }
 
-/* both held back until the points have found their places */
-.about__text,
-.about__action {
+/* Both held back until the points have found their places — but only once
+   about.js has said it is actually going to place them. It bows out on
+   several paths (no WebGL2, a shader that will not link, reduced motion),
+   and hiding the copy by default meant every one of those took the
+   paragraph and the button with it. The entrance is the enhancement; the
+   words are not. */
+.about.is-armed .about__text,
+.about.is-armed .about__action {
   opacity: 0;
   transform: translateY(0.75rem);
   transition:
@@ -1046,7 +1053,10 @@ body.menu-open { overflow: hidden; }
 @media (max-width: 760px) {
   /* The field is the section here, so it is given the height to be one:
      a wide source in a narrow box crops to the middle of the group, and
-     the only way to read faces at this width is to let it get taller. */
+     the only way to read faces at this width is to let it get taller.
+     The band of black around it comes in to match — the picture already
+     fades out at its own edges, and the padding was doubling that. */
+  .about { padding-block: clamp(2rem, 5.5vh, 4rem); }
   .about__frame { height: clamp(19rem, 92vw, 32rem); }
 
   .about__wrap > .section-label { margin-bottom: clamp(-3.25rem, -7vw, -1rem); }

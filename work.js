@@ -216,6 +216,7 @@
   }
 
   var timers = [];   // per panel: [cleanup timer, restore timer]
+  var settle = 0;    // gallery: the roll waiting to see if scroll has stopped
 
   function clearTimers(i) {
     if (timers[i]) timers[i].forEach(clearTimeout);
@@ -255,13 +256,22 @@
     for (var k = 0; k < panels.length; k++) {
       panels[k].classList.toggle("is-active", k === i);
     }
-    // Cards the deck is only passing through on its way to a distant one
-    // get their copy plainly: the shuffle measures every character, and
-    // running it four times inside one catch-up buys nothing legible.
-    // In the gallery it never runs at all — a scroll changes the copy
-    // whenever it likes there, and a per-character rebuild each time is
-    // both heavy and busy on a phone. The panels cross-fade instead.
-    if (!gallery && i >= 0 && i === wanted) shuffleIn(i);
+    /* Cards the deck is only passing through on its way to a distant one
+       get their copy plainly: the shuffle measures every character, and
+       running it four times inside one catch-up buys nothing legible.
+
+       A flick through the gallery is the same situation without a deck to
+       ask, so the answer comes from waiting instead: the roll is held for
+       a moment and only plays if the copy is still the one that asked for
+       it. The wait is shorter than the fade it happens under. */
+    if (i >= 0) {
+      if (!gallery) {
+        if (i === wanted) shuffleIn(i);
+      } else {
+        clearTimeout(settle);
+        settle = setTimeout(function () { if (shown === i) shuffleIn(i); }, 60);
+      }
+    }
     if (prev >= 0 && prev !== i) {
       timers[prev] = (timers[prev] || []).concat(
         setTimeout(function () { restore(prev); }, 320)   // after its fade
@@ -505,6 +515,20 @@
   if (gallery) {
     releaseCards();
     spy();
+
+    // as on the deck: the copy is simply there until the section is
+    // reached, and rolls from then on
+    if (window.IntersectionObserver) {
+      var gio = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        gio.disconnect();
+        armed = true;
+        shuffleIn(shown < 0 ? 0 : shown);
+      }, { threshold: 0.35 });
+      gio.observe(cards[0]);
+    } else {
+      armed = true;
+    }
   } else {
     cards.forEach(pxInit);
     cards.forEach(function (el) {
