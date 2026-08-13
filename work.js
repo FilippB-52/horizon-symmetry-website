@@ -334,8 +334,20 @@
     return wanted;
   }
 
+  /* The spacing between two cards is a share of the deck, which is right
+     while the deck is most of the screen. Stacked under the copy it is not,
+     so the layout is allowed to state the spacing itself in --deck-gap and
+     this reads it back. Unset — every desktop width — it is NaN and the
+     share stands. */
+  var gapPx = 0;
+
+  function readGap() {
+    var v = parseFloat(getComputedStyle(deck).getPropertyValue("--deck-gap"));
+    gapPx = v > 0 ? v : 0;
+  }
+
   function layout() {
-    var step = cards[0].offsetHeight + deck.clientHeight * GAP;
+    var step = cards[0].offsetHeight + (gapPx || deck.clientHeight * GAP);
 
     for (var i = 0; i < N; i++) {
       var el = cards[i];
@@ -459,6 +471,7 @@
     else st.img.addEventListener("load", function () { pxCoarse(el); }, { once: true });
   });
 
+  readGap();
   u = from = to = wanted = Math.round(readScroll());
   layout();
 
@@ -476,6 +489,7 @@
 
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", function () {
+    readGap();                            // the breakpoint may have changed
     for (var k = 0; k < panels.length; k++) restore(k);
     cards.forEach(function (el) {
       if (el.__px && !el.classList.contains("is-sharp")) pxDraw(el.__px, el.__px.cols || COLS);

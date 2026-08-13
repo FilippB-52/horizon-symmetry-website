@@ -35,6 +35,17 @@
   font-weight: 400; font-style: normal; font-display: swap;
 }
 
+/* Registered so it computes to a real length. An unregistered custom
+   property computes to the tokens it was written with, and work.js has to
+   read this back as a number. Nothing sets it outside the phone layout, so
+   the 0 initial value is what desktop reports, and work.js falls back to
+   its own spacing there. */
+@property --deck-gap {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 :root {
   --void:       #000000;
   --ink:        #FFFFFF;
@@ -759,37 +770,65 @@ body.menu-open { overflow: hidden; }
 /* ---------- narrow screens ------------------------------------------ */
 
 @media (max-width: 900px) {
-  .work__track { height: calc((var(--n) + 0.5) * 85svh); }
+  /* a longer run per project: a flick on a phone covers ground a wheel
+     does not, and one screen each was easy to overshoot */
+  .work__track { height: calc((var(--n) + 0.5) * 105svh); }
 
   /* Stacked, copy first: heading, rule and description hold the top of the
-     screen and stay there, and the covers run underneath them. The copy is
-     never what a card slides into, because a card cannot leave the deck. */
+     screen, the covers run underneath them. */
   .work__inner {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
-    gap: clamp(1rem, 3vh, 1.8rem);
-    padding: clamp(1.5rem, 5vh, 2.75rem) var(--gutter) clamp(1.4rem, 4vh, 2.4rem);
+    gap: clamp(1.25rem, 3.5vh, 2rem);
+    padding: 0 var(--gutter);
   }
 
-  .work__copy { justify-content: flex-start; }
+  /* The copy is also what a cover disappears behind. It carries the page
+     ground edge to edge, from the very top of the screen, and fades out
+     just below itself — so the cover leaving slides under the description
+     and is gone, rather than being cut off against nothing in mid air. */
+  .work__copy {
+    background: var(--void);
+    margin-inline: calc(var(--gutter) * -1);
+    padding: clamp(2.5rem, 7.5vh, 4.5rem) var(--gutter) 0;
+    justify-content: flex-start;
+  }
+  .work__copy::after {
+    content: "";
+    position: absolute;
+    inset: 100% 0 auto 0;
+    height: clamp(1.25rem, 3vh, 1.75rem);
+    background: linear-gradient(to bottom, var(--void), rgba(0, 0, 0, 0));
+    pointer-events: none;
+  }
+
   .work__label { font-size: clamp(2rem, 8.6vw, 3.1rem); }
 
-  /* The deck is a window rather than a stage: the card in front sits in the
-     middle of it at the cover's own proportions, the one leaving is cut off
-     at the top edge, and the one arriving shows at the bottom. */
-  .deck { overflow: hidden; }
+  /* The screen is the frame. The cover coming up runs off the bottom of it
+     and is cut by the edge of the phone, which is the only cut there is. */
+  .work__stage { overflow: hidden; }
 
-  /* Sized off its own aspect ratio rather than off the box it is in, so a
-     cover is never cropped to a letterbox to fill the deck. Height is what
-     is set; the width follows from it, and the auto margins centre it. */
+  /* Wider than the copy, and spaced further apart than the desktop share —
+     work.js reads --deck-gap and uses it in place of its own. */
+  .deck {
+    /* wide enough that one step carries the cover leaving fully behind the
+       copy: what is above the description is nothing, not a sliver of the
+       last project */
+    --deck-gap: clamp(3.6rem, 9.5vh, 5.2rem);
+    margin-inline: calc(0.9rem - var(--gutter));
+  }
+
+  /* Larger, and nearer the shape the case page opens into, so following a
+     cover is less of a jump. Height leads and the width follows it, so a
+     cover is never stretched to fill the box it is in. It hangs from the
+     top of the deck: the room that matters is the room below it, where the
+     next one comes up from. */
   .card {
-    --card-h: min(60%, calc((100vw - 2 * var(--gutter)) / 1.6));
-    /* held above centre: the room that matters is the room below, where the
-       next cover comes up from. Above it there is only the one leaving. */
-    top: calc(42% - var(--card-h) / 2);
+    --card-h: min(38svh, calc((100vw - 1.8rem) * 0.75));
+    top: clamp(0.35rem, 1.2vh, 0.9rem);
     height: var(--card-h);
     width: auto;
-    aspect-ratio: 16 / 10;
+    aspect-ratio: 4 / 3;
     margin-inline: auto;
   }
 
