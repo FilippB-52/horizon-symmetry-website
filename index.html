@@ -64,12 +64,21 @@
   <section class="hero" aria-labelledby="hero-title">
 
     <!-- Unicorn Studio scene: the reveal. Sits behind everything and takes
-         the pointer, so every overlay above it must stay pointer-transparent. -->
+         the pointer, so every overlay above it must stay pointer-transparent.
+         Not shown on a phone — the still below takes the section there. -->
     <div class="hero__scene" data-us-project="rKv14eUBrORETKYVXzBe"
          data-us-dpi="1.5" data-us-scale="1" data-us-fps="60"
          data-us-alttext="A lone figure before a violet black hole"
          data-us-arialabel="A lone figure before a violet black hole"
          aria-hidden="true"></div>
+
+    <!-- The phone's hero. A reveal wants a cursor and a phone has none, so
+         the artwork is simply the artwork there: one portrait frame, filling
+         the screen. The frame itself is named in styles.css, inside the
+         phone's media query — a hidden <img> is still downloaded, a
+         background nobody matches is not, and desktop should pay nothing
+         for a picture it never shows. -->
+    <div class="hero__still" aria-hidden="true"></div>
 
     <div class="hero__content" id="hero-content">
       <h1 class="hero__title" id="hero-title">
@@ -297,8 +306,14 @@
 </main>
 
 <script>
+/* A phone is served the still instead of the scene, and asking the
+   stylesheet whether the scene is being painted keeps that decision in the
+   one place it is written. Answered "no", none of this runs: the library
+   is never fetched and the scene is never built. */
+if (getComputedStyle(document.querySelector(".hero__scene")).display !== "none") {
 /* Unicorn Studio loader, verbatim from the project embed */
 !function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
+}
 </script>
 <script src="hero.js" defer></script>
 <script src="menu.js" defer></script>

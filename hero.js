@@ -59,13 +59,14 @@
     if (!document.hidden) remeasure();
   });
 
-  /* --- driving the reveal on a phone ---------------------------------
+  /* --- driving the reveal without a cursor ---------------------------
 
-     The scene reveals whatever is under the cursor, and a phone has no
-     cursor. A finger is not a substitute: the only drag available on the
-     hero is the one that scrolls the page, so the scene is taken out of
-     the hit test entirely (pointer-events: none, in styles.css) and
-     driven from here instead.
+     The scene reveals whatever is under the cursor, and a touch screen has
+     no cursor. A finger is not a substitute: the only drag available on
+     the hero is the one that scrolls the page. So where the scene is still
+     painted and there is nothing to point with — a tablet, a touch laptop —
+     it is driven from here instead. A phone is not shown the scene at all
+     (styles.css), and a scene with no box on screen is left alone.
 
      The scene has no API for its pointer, but it has never needed one —
      it reads the mouse off the events the page sends it. So the events
@@ -100,27 +101,31 @@
   function move(now) {
     raf = 0;
     var r = scene.getBoundingClientRect();
-    if (r.width && r.height) {
-      var t = now / 1000;
-      /* two frequencies per axis, none of them a multiple of another, so
-         the path never repeats visibly and never sits still */
-      var x = HOLE_X + SWING_X * (0.72 * Math.sin(t * 0.31) + 0.28 * Math.sin(t * 0.83));
-      var y = HOLE_Y + SWING_Y * (0.72 * Math.cos(t * 0.24) + 0.28 * Math.sin(t * 0.67));
+    /* No box means the phone layout has taken the scene off the page. The
+       loop stops rather than spinning against nothing; a resize can bring
+       it back, and that is what re-arms it. */
+    if (!r.width || !r.height) return;
 
-      var cx = r.left + x * r.width;
-      var cy = r.top  + y * r.height;
+    var t = now / 1000;
+    /* two frequencies per axis, none of them a multiple of another, so
+       the path never repeats visibly and never sits still */
+    var x = HOLE_X + SWING_X * (0.72 * Math.sin(t * 0.31) + 0.28 * Math.sin(t * 0.83));
+    var y = HOLE_Y + SWING_Y * (0.72 * Math.cos(t * 0.24) + 0.28 * Math.sin(t * 0.67));
 
-      if (!entered) {
-        entered = true;
-        send("pointerover", cx, cy, window.PointerEvent || MouseEvent,
-             { pointerId: 1, pointerType: "mouse", isPrimary: true });
-        send("mouseover", cx, cy, MouseEvent);
-        send("mouseenter", cx, cy, MouseEvent);
-      }
-      send("pointermove", cx, cy, window.PointerEvent || MouseEvent,
+    var cx = r.left + x * r.width;
+    var cy = r.top  + y * r.height;
+
+    if (!entered) {
+      entered = true;
+      send("pointerover", cx, cy, window.PointerEvent || MouseEvent,
            { pointerId: 1, pointerType: "mouse", isPrimary: true });
-      send("mousemove", cx, cy, MouseEvent);
+      send("mouseover", cx, cy, MouseEvent);
+      send("mouseenter", cx, cy, MouseEvent);
     }
+    send("pointermove", cx, cy, window.PointerEvent || MouseEvent,
+         { pointerId: 1, pointerType: "mouse", isPrimary: true });
+    send("mousemove", cx, cy, MouseEvent);
+
     if (near && !document.hidden) raf = requestAnimationFrame(move);
   }
 
@@ -140,5 +145,6 @@
 
   document.addEventListener("visibilitychange", run);
   addEventListener("hs:home", run);             // the hero is back on screen
+  addEventListener("resize", run);              // or a breakpoint gave it a box
   run();
 })();

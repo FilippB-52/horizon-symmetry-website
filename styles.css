@@ -312,6 +312,10 @@ body.menu-open { overflow: hidden; }
 }
 .hero__scene canvas { display: block; width: 100%; height: 100%; }
 
+/* The phone's artwork, named only inside the phone's media query so no
+   other screen ever fetches it. */
+.hero__still { display: none; }
+
 /* the starfield meets the black page on a gradient, not on an edge */
 .hero__fade {
   position: absolute;
@@ -486,25 +490,40 @@ body.menu-open { overflow: hidden; }
 }
 
 @media (max-width: 700px) {
-  /* The scene is a wide composition. Stretched over a portrait viewport it
-     is scaled up until only a slab of its middle is left, which is what made
-     the artwork read as oversized here. Given a landscape box of its own it
-     comes back to something near its own proportions and sits in the lower
-     half, under the copy. The reveal is a fixed radius in scene space, so
-     shrinking the scene is also what makes the revealed area larger. */
-  .hero__scene {
-    top: 66%;
-    bottom: auto;
-    height: min(48svh, 76vw);
-    transform: translateY(-50%);
-    /* driven by hero.js on a phone, never by a finger: a drag here is a
-       scroll the page needs */
-    pointer-events: none;
+  /* The scene is a reveal, and a reveal wants a cursor. The phone gets a
+     still of the same subject instead — drawn for this shape rather than a
+     wide frame squeezed into it — and the scene is not built at all. The
+     check that stops it being fetched reads this rule; see index.html. */
+  .hero__scene { display: none; }
+
+  /* The frame is a touch wider than a phone is, so covering shows all of it
+     top to bottom and takes the crop off the two sides, where there is
+     nothing but dust. Nothing is cut off the subject at any phone size.
+     The plain url is for anything that cannot read image-set. */
+  .hero__still {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: block;
+    background-image: url("assets/hero-mobile-1242.jpg");
+    background-image: image-set(
+      url("assets/hero-mobile-828.jpg") 2x,
+      url("assets/hero-mobile-1242.jpg") 3x);
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+  }
+
+  /* The artwork owns the middle of the screen now, so the copy sits above
+     it: the top third of the frame is empty space the type can hold. */
+  .hero__content {
+    top: clamp(5.25rem, 12svh, 7.5rem);
+    transform: none;
   }
 }
 
 @media (max-width: 560px) {
-  .hero__content { width: auto; right: var(--gutter); top: 30%; }
+  .hero__content { width: auto; right: var(--gutter); }
   .hero__title   { letter-spacing: -0.028em; }
   .hero__sub     { max-width: 34ch; }
   .cta           { padding: 0.9rem 1.3rem 0.9rem 1.5rem; }
