@@ -5,15 +5,29 @@
    magnifies what is underneath it and carries the word that says what
    clicking does.
 
-   The refraction is real rather than drawn: the patch of the front
-   card's image sitting under the lens is copied into a small texture
-   each frame and bent through a sphere in the shader — centre magnified,
-   rim pushed outward, the three channels separated a little more the
-   further out they land. The rim shading and the highlight are the only
-   parts that are painted rather than sampled.
+   The refraction is real rather than drawn: the patch of deck sitting
+   under the lens is composited into a small texture each frame and bent
+   through a sphere in the shader — centre magnified, rim pushed outward,
+   the three channels separated a little more the further out they land.
+   The rim shading and the highlight are the only parts that are painted
+   rather than sampled.
 
    Only the patch travels to the GPU, never the whole image, so the cost
    does not scale with how large the card is.
+
+   Two rules hold the whole thing together, and both were learned the
+   hard way:
+
+     - the patch is composited out of whatever the deck actually has
+       under the glass, not out of the card some class says is in front.
+       The deck slides while the lens stays under the pointer, so those
+       two answers disagree for the length of every card change.
+
+     - the run never ends quietly. A frame with nothing to draw skips
+       and comes back; it does not return without booking the next one.
+       A loop that stops while the lens is still on screen leaves the
+       last frame frozen there, and that frozen frame then follows the
+       visitor to every other project on the deck.
    =================================================================== */
 
 (function () {
@@ -22,7 +36,7 @@
   /* --- tuning ------------------------------------------------------- */
 
   var PATCH = 1.5;    // source area copied, as a multiple of the lens
-  var TEX   = 512;    // texture the patch is copied into
+  var TEX   = 512;    // texture the patch is composited into
   var ZOOM  = 1.22;   // magnification at the centre — noticeable, not a telescope
   var BEND  = 0.34;   // outward push, confined to the rim
   var ABERR = 0.008;  // channel separation at the rim — barely there on purpose
@@ -31,8 +45,15 @@
   var EASE  = 0.22;   // how much of the distance to the pointer per frame
   var LABEL = "VIEW";   // size lives in CSS, on .deck
 
+  var VOID = "#000000";   // the deck sits on the section's black
+  var CARD = "#0C0C0F";   // a card with nothing to show yet
+  var FADE = 380;         // ms the fade-out takes, plus a frame or two
+
   var deck = document.querySelector(".deck");
   if (!deck) return;
+
+  var cards = Array.prototype.slice.call(deck.querySelectorAll(".card"));
+  if (!cards.length) return;
 
   if (window.matchMedia) {
     // a lens is a pointer affordance; without a hovering pointer it is noise
@@ -45,7 +66,7 @@
     "precision highp float;",
     "in vec2 vUv;",
     "out vec4 outColor;",
-    "uniform sampler2D uTex;",    // the cover under the lens
+    "uniform sampler2D uTex;",    // the deck under the lens
     "uniform sampler2D uText;",   // the label, as a mask
     "uniform float uR;",          // lens radius in patch-UV units
 
@@ -132,6 +153,17 @@
   var gl = canvas.getContext("webgl2", { alpha: true, premultipliedAlpha: false });
   if (!gl) { box.remove(); return; }
 
+  // the patch of deck under the lens, composited here before it is uploaded
+  var patch = document.createElement("canvas");
+  patch.width = patch.height = TEX;
+  var pctx = patch.getContext("2d");
+
+  var tcan = document.createElement("canvas");   // the label, before upload
+  var tctx = tcan.getContext("2d");
+
+  var prog = null, tex = null, textTex = null;
+  var lost = false;
+
   function shader(type, source) {
     var s = gl.createShader(type);
     gl.shaderSource(s, source);
@@ -139,58 +171,59 @@
     return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null;
   }
 
-  var vs = shader(gl.VERTEX_SHADER, VERT);
-  var fs = shader(gl.FRAGMENT_SHADER, FRAG);
-  if (!vs || !fs) { box.remove(); return; }
+  function makeTex(unit) {
+    var t = gl.createTexture();
+    gl.activeTexture(unit);
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    return t;
+  }
 
-  var prog = gl.createProgram();
-  gl.attachShader(prog, vs);
-  gl.attachShader(prog, fs);
-  gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { box.remove(); return; }
+  /* Everything the context owns, in one place — because a context can be
+     taken away and handed back, and then all of it has to be made again. */
+  function build() {
+    var vs = shader(gl.VERTEX_SHADER, VERT);
+    var fs = shader(gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return false;
 
-  gl.useProgram(prog);
-  gl.uniform1f(gl.getUniformLocation(prog, "uR"), 0.5 / PATCH);
-  gl.uniform1i(gl.getUniformLocation(prog, "uTex"), 0);
-  gl.uniform1i(gl.getUniformLocation(prog, "uText"), 1);
+    prog = gl.createProgram();
+    gl.attachShader(prog, vs);
+    gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
 
-  var quad = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, quad);
-  gl.bufferData(gl.ARRAY_BUFFER,
-    new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-  var aPos = gl.getAttribLocation(prog, "aPos");
-  gl.enableVertexAttribArray(aPos);
-  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    gl.useProgram(prog);
+    gl.uniform1f(gl.getUniformLocation(prog, "uR"), 0.5 / PATCH);
+    gl.uniform1i(gl.getUniformLocation(prog, "uTex"), 0);
+    gl.uniform1i(gl.getUniformLocation(prog, "uText"), 1);
 
-  var tex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    var quad = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quad);
+    gl.bufferData(gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var aPos = gl.getAttribLocation(prog, "aPos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-  // the patch of cover under the lens, copied here before it is uploaded
-  var patch = document.createElement("canvas");
-  patch.width = patch.height = TEX;
-  var pctx = patch.getContext("2d");
+    tex     = makeTex(gl.TEXTURE0);
+    textTex = makeTex(gl.TEXTURE1);
+    gl.activeTexture(gl.TEXTURE0);
+
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    paintLabel(canvas.width);
+    return true;
+  }
 
   /* --- the label, as a mask ----------------------------------------- */
-
-  var textTex = gl.createTexture();
-  gl.activeTexture(gl.TEXTURE1);
-  gl.bindTexture(gl.TEXTURE_2D, textTex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.activeTexture(gl.TEXTURE0);
-
-  var tcan = document.createElement("canvas");
-  var tctx = tcan.getContext("2d");
 
   /* Drawn white on nothing: only the alpha is read, and the shader turns
      that into an inversion rather than a fill. */
   function paintLabel(px) {
+    if (!textTex || !(px > 2)) return;
+
     tcan.width = tcan.height = px;
     tctx.clearRect(0, 0, px, px);
 
@@ -226,75 +259,126 @@
 
   /* --- state -------------------------------------------------------- */
 
-  var on = false, raf = 0;
-  var want = { x: 0, y: 0 };     // where the pointer is
-  var at   = { x: 0, y: 0 };     // where the lens has got to
-  var size = 0;
+  var on = false;                // the pointer is on the card in front
+  var raf = 0;                   // pending frame, 0 when none
+  var until = 0;                 // keep painting this long past the last hide
+  var snap = false;              // next frame arrives under the pointer
+  var want = { x: 0, y: 0 };     // pointer, in client space
+  var at   = { x: 0, y: 0 };     // where the lens has got to, in deck space
+  var size = 0;                  // lens diameter in CSS px
+  var radii = [];                // each card's corner radius, in CSS px
 
   function measure() {
-    size = box.getBoundingClientRect().width;
+    var w = box.getBoundingClientRect().width;
+    if (!w) return;              // out of layout: there is nothing true to read
+    size = w;
+
+    radii = cards.map(function (c) {
+      return parseFloat(getComputedStyle(c).borderTopLeftRadius) || 0;
+    });
+
     var dpr = Math.min(window.devicePixelRatio || 1, 2);
     var px = Math.max(2, Math.round(size * dpr));
-    if (canvas.width !== px) {
-      canvas.width = canvas.height = px;
-      gl.viewport(0, 0, px, px);
-      paintLabel(px);
-    }
+    if (canvas.width === px) return;
+    canvas.width = canvas.height = px;
+    gl.viewport(0, 0, px, px);
+    paintLabel(px);
   }
 
-  /* The front card, or nothing if the deck is mid-move. */
+  /* work.js writes this on every card on every frame. */
+  function litness(card) {
+    var o = card.style.opacity;
+    return o === "" ? 1 : (parseFloat(o) || 0);
+  }
+
+  /* The card in front: the most lit one still on the deck. Read from the
+     deck rather than from `.is-current`, so a frame in which work.js has
+     not marked anything cannot leave the lens with nothing to sit on. */
   function front() {
-    return deck.querySelector(".card.is-current");
+    var best = null, top = -1;
+    for (var i = 0; i < cards.length; i++) {
+      if (cards[i].style.visibility === "hidden") continue;
+      var o = litness(cards[i]);
+      if (o > top) { top = o; best = cards[i]; }
+    }
+    return best;
   }
 
-  /* Copy the area under the lens out of the card's image. The image is
-     laid out with object-fit: cover, so the crop it is already showing
-     has to be undone before the patch can be cut: `s` is that cover
-     scale, and it turns a point on the card into a pixel in the file. */
-  function grab(card) {
+  /* What a card is actually showing: the photograph once it has resolved,
+     the coarse blocks while it has not. Magnifying the photograph over a
+     card that is still made of blocks is the one mismatch the glass can
+     never explain away. */
+  function shown(card) {
+    if (!card.classList.contains("is-sharp")) {
+      var px = card.querySelector(".card__px");
+      if (px && px.width > 1) return { el: px, w: px.width, h: px.height, smooth: false };
+    }
     var img = card.querySelector("img");
-    var r = card.getBoundingClientRect();
-    var d = deck.getBoundingClientRect();
-    if (!r.width || !img || !img.naturalWidth) return false;
+    if (img && img.naturalWidth) {
+      return { el: img, w: img.naturalWidth, h: img.naturalHeight, smooth: true };
+    }
+    return null;
+  }
 
-    var s = Math.max(r.width / img.naturalWidth, r.height / img.naturalHeight);
-    var px = at.x - (r.left - d.left);          // pointer, in card space
-    var py = at.y - (r.top - d.top);
+  /* Everything under the glass, composited into the patch.
 
-    var cx = (img.naturalWidth  - r.width  / s) / 2 + px / s;
-    var cy = (img.naturalHeight - r.height / s) / 2 + py / s;
-    var span = (size * PATCH) / s;               // patch, in image pixels
+     The deck is drawn again at patch scale: the black it sits on, then
+     each card that reaches the patch, in its own place, at its own
+     opacity, clipped to its own corners. Nearly every card is culled by
+     the overlap test, so this is one or two draws — and at a card change,
+     when the glass hangs across the seam, it is the two the eye can see. */
+  function grab(d) {
+    var span = size * PATCH;                   // patch side, in CSS px
+    var x0 = at.x - span / 2;                  // patch origin, in deck space
+    var y0 = at.y - span / 2;
+    var k = TEX / span;                        // deck px → patch px
 
-    var sx = cx - span / 2, sy = cy - span / 2;
-    var x0 = Math.max(0, sx), y0 = Math.max(0, sy);
-    var x1 = Math.min(img.naturalWidth, sx + span);
-    var y1 = Math.min(img.naturalHeight, sy + span);
-
-    pctx.fillStyle = "#0A0A0C";
+    pctx.setTransform(1, 0, 0, 1, 0, 0);
+    pctx.globalAlpha = 1;
+    pctx.fillStyle = VOID;
     pctx.fillRect(0, 0, TEX, TEX);
+    pctx.setTransform(k, 0, 0, k, -x0 * k, -y0 * k);
 
-    if (x1 > x0 && y1 > y0) {
-      var k = TEX / span;
-      pctx.drawImage(img, x0, y0, x1 - x0, y1 - y0,
-                     (x0 - sx) * k, (y0 - sy) * k, (x1 - x0) * k, (y1 - y0) * k);
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      if (card.style.visibility === "hidden") continue;
+
+      var op = litness(card);
+      if (op < 0.004) continue;
+
+      // the rect already carries the deck's perspective, so a card set
+      // back along z lands here at the size it is drawn on screen
+      var r = card.getBoundingClientRect();
+      var L = r.left - d.left, T = r.top - d.top;
+      if (!r.width || L > x0 + span || L + r.width < x0 ||
+          T > y0 + span || T + r.height < y0) continue;
+
+      pctx.save();
+      pctx.globalAlpha = op;
+      pctx.beginPath();
+      if (pctx.roundRect) pctx.roundRect(L, T, r.width, r.height, radii[i] || 0);
+      else pctx.rect(L, T, r.width, r.height);
+      pctx.clip();
+      pctx.fillStyle = CARD;
+      pctx.fillRect(L, T, r.width, r.height);
+
+      var src = shown(card);
+      if (src) {
+        var s = Math.max(r.width / src.w, r.height / src.h);   // object-fit: cover
+        var sw = r.width / s, sh = r.height / s;
+        pctx.imageSmoothingEnabled = src.smooth;
+        pctx.drawImage(src.el, (src.w - sw) / 2, (src.h - sh) / 2, sw, sh,
+                       L, T, r.width, r.height);
+      }
+      pctx.restore();
     }
 
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);   // canvas is top-down, GL is bottom-up
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, patch);
-    return true;
   }
 
-  function frame() {
-    raf = 0;
-
-    at.x += (want.x - at.x) * EASE;
-    at.y += (want.y - at.y) * EASE;
-    box.style.transform = "translate3d(" + at.x + "px," + at.y + "px,0)";
-
-    var card = front();
-    if (!card || !grab(card)) return;
-
+  function render() {
     gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.useProgram(prog);
@@ -306,16 +390,53 @@
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+  }
 
-    if (on) raf = requestAnimationFrame(frame);
+  function wipe() {
+    if (lost || !prog) return;
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+
+  function stop() {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    wipe();                      // never leave a frame behind to be shown again
+  }
+
+  function frame(now) {
+    /* Booked before anything else can happen. Every early return below
+       is a frame skipped, not a run ended: the alternative is a lens
+       frozen on screen still magnifying a project that has scrolled by. */
+    raf = requestAnimationFrame(frame);
+
+    if (!on && now > until) { stop(); return; }
+
+    var d = deck.getBoundingClientRect();
+    if (!d.width || !size) { hide(); return; }   // out of layout: a case is open
+
+    // the pointer is kept in client space and converted here, so the lens
+    // stays under the cursor even on the frames where the deck itself moves
+    var tx = want.x - d.left, ty = want.y - d.top;
+    if (snap) { at.x = tx; at.y = ty; snap = false; }
+    else { at.x += (tx - at.x) * EASE; at.y += (ty - at.y) * EASE; }
+    box.style.transform = "translate3d(" + at.x + "px," + at.y + "px,0)";
+
+    if (lost || !prog) return;
+    try {
+      grab(d);
+      render();
+    } catch (e) { /* a bad frame must not end the run */ }
+  }
+
+  function pump() {
+    if (!raf) raf = requestAnimationFrame(frame);
   }
 
   /* --- pointer ------------------------------------------------------ */
 
   function place(e) {
-    var d = deck.getBoundingClientRect();
-    want.x = e.clientX - d.left;
-    want.y = e.clientY - d.top;
+    want.x = e.clientX;
+    want.y = e.clientY;
   }
 
   /* Live only while the pointer is actually over the front card — the
@@ -325,43 +446,63 @@
     var card = front();
     if (!card) return false;
     var r = card.getBoundingClientRect();
-    return e.clientX >= r.left && e.clientX <= r.right &&
+    return !!r.width &&
+           e.clientX >= r.left && e.clientX <= r.right &&
            e.clientY >= r.top  && e.clientY <= r.bottom;
   }
 
   function show(e) {
     measure();
     place(e);
-    at.x = want.x;                       // arrive under the pointer, not from a corner
-    at.y = want.y;
+    snap = true;                         // arrive under the pointer, not from a corner
     on = true;
     document.body.classList.add("lens-on");
     box.classList.add("is-on");
-    box.style.transform = "translate3d(" + at.x + "px," + at.y + "px,0)";
     if (raf) { cancelAnimationFrame(raf); raf = 0; }
-    frame();                             // paint now, never a blank first frame
+    frame(performance.now());            // paint now, never a blank first frame
   }
 
   function hide() {
-    on = false;
+    if (on) { on = false; until = performance.now() + FADE; }
     document.body.classList.remove("lens-on");
     box.classList.remove("is-on");
-    setTimeout(function () {
-      if (!on && raf) { cancelAnimationFrame(raf); raf = 0; }
-    }, 380);
   }
 
   deck.addEventListener("pointermove", function (e) {
     if (e.pointerType !== "mouse") return;
-    if (!over(e)) { if (on) hide(); return; }
+    if (!over(e)) { hide(); return; }
     if (!on) { show(e); return; }
     place(e);
+    pump();          // if the run ever stopped anyway, a move brings it back
   });
 
   deck.addEventListener("pointerleave", hide);
 
+  /* The page runs several WebGL scenes at once. If the browser takes this
+     context back, the canvas keeps its last frame on screen — which is
+     exactly the frozen-lens failure, arrived at from the other side. Hide
+     it, and rebuild if the context comes back. */
+  canvas.addEventListener("webglcontextlost", function (e) {
+    e.preventDefault();                  // without this it is never restored
+    lost = true;
+    prog = tex = textTex = null;
+    hide();
+  });
+  canvas.addEventListener("webglcontextrestored", function () {
+    lost = !build();
+  });
+
+  /* A case view puts the landing page out of layout, and a hidden tab
+     stops the clock. Either way the lens has nothing honest to show. */
+  addEventListener("hs:home", hide);
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) hide();
+  });
+
   addEventListener("resize", measure);
+
   measure();
+  if (!build()) { box.remove(); return; }
 
   // the label is cut from a real typeface, so it has to be redrawn once
   // the face has actually arrived

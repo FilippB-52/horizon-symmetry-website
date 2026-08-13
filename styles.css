@@ -692,8 +692,10 @@ body.menu-open { overflow: hidden; }
 .card.is-sharp .card__px { display: none; }
 .card:not(.is-sharp) img { visibility: hidden; }
 
-/* the lens is the cursor while you are over the card in front */
-.lens-on .card.is-current { cursor: none; }
+/* The lens is the cursor while you are over the card in front. Hung off
+   the deck rather than off `.is-current`, so a frame in which work.js has
+   not marked a card cannot flash the arrow back. */
+.lens-on .deck { cursor: none; }
 
 .lens {
   position: absolute;
