@@ -55,7 +55,18 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+
+/* The page moves in one direction and no other: no pinch, no double-tap
+   zoom, no sideways rubber-band, no text dragged out of a heading. Every
+   scene here is measured against the viewport it was given, and all of
+   those gestures move the page under artwork that has already been laid
+   out. lock.js adds the one piece iOS only answers to in script. */
+html {
+  -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+}
 
 body {
   margin: 0;
@@ -68,6 +79,12 @@ body {
   /* `clip`, not `hidden` — hidden makes body a scroll container and
      breaks position:sticky for the work stack */
   overflow-x: clip;
+  overscroll-behavior-x: none;
+  touch-action: pan-y;
+  -webkit-user-select: none;
+          user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .skip-link {
@@ -456,8 +473,26 @@ body.menu-open { overflow: hidden; }
   .hero__content { width: min(46ch, 78vw); top: 42%; }
 }
 
+@media (max-width: 700px) {
+  /* The scene is a wide composition. Stretched over a portrait viewport it
+     is scaled up until only a slab of its middle is left, which is what made
+     the artwork read as oversized here. Given a landscape box of its own it
+     comes back to something near its own proportions and sits in the lower
+     half, under the copy. The reveal is a fixed radius in scene space, so
+     shrinking the scene is also what makes the revealed area larger. */
+  .hero__scene {
+    top: 66%;
+    bottom: auto;
+    height: min(48svh, 76vw);
+    transform: translateY(-50%);
+    /* driven by hero.js on a phone, never by a finger: a drag here is a
+       scroll the page needs */
+    pointer-events: none;
+  }
+}
+
 @media (max-width: 560px) {
-  .hero__content { width: auto; right: var(--gutter); top: 38%; }
+  .hero__content { width: auto; right: var(--gutter); top: 30%; }
   .hero__title   { letter-spacing: -0.028em; }
   .hero__sub     { max-width: 34ch; }
   .cta           { padding: 0.9rem 1.3rem 0.9rem 1.5rem; }
@@ -725,22 +760,41 @@ body.menu-open { overflow: hidden; }
 @media (max-width: 900px) {
   .work__track { height: calc((var(--n) + 0.5) * 85svh); }
 
-  /* stacked: card on top holding most of the screen, copy under it */
+  /* Stacked, copy first: heading, rule and description hold the top of the
+     screen and stay there, and the covers run underneath them. The copy is
+     never what a card slides into, because a card cannot leave the deck. */
   .work__inner {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) auto;
-    gap: clamp(0.9rem, 2.5vw, 1.4rem);
-    padding: 0 var(--gutter) clamp(1.4rem, 4vh, 2.4rem);
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: clamp(1rem, 3vh, 1.8rem);
+    padding: clamp(1.5rem, 5vh, 2.75rem) var(--gutter) clamp(1.4rem, 4vh, 2.4rem);
   }
 
-  .deck { order: -1; }
-  .card { top: 8%; height: 84%; }
+  .work__copy { justify-content: flex-start; }
+  .work__label { font-size: clamp(2rem, 8.6vw, 3.1rem); }
 
-  /* the copy layers are absolute, so the row needs its own height */
-  .work__panel {
-    min-height: 30svh;
-    padding-inline: var(--gutter);
+  /* The deck is a window rather than a stage: the card in front sits in the
+     middle of it at the cover's own proportions, the one leaving is cut off
+     at the top edge, and the one arriving shows at the bottom. */
+  .deck { overflow: hidden; }
+
+  /* Sized off its own aspect ratio rather than off the box it is in, so a
+     cover is never cropped to a letterbox to fill the deck. Height is what
+     is set; the width follows from it, and the auto margins centre it. */
+  .card {
+    --card-h: min(60%, calc((100vw - 2 * var(--gutter)) / 1.6));
+    /* held above centre: the room that matters is the room below, where the
+       next cover comes up from. Above it there is only the one leaving. */
+    top: calc(42% - var(--card-h) / 2);
+    height: var(--card-h);
+    width: auto;
+    aspect-ratio: 16 / 10;
+    margin-inline: auto;
   }
+
+  /* every project's copy is stacked in this one cell, so it is as tall as
+     the longest of them and never resizes on a change */
+  .work__panel { padding-inline: 0; }
 
   .project { align-content: start; }
 
@@ -889,13 +943,21 @@ body.menu-open { overflow: hidden; }
 .about__action .cta { opacity: 1; transform: none; transition-delay: 0s; }
 
 @media (max-width: 760px) {
-  /* a narrow box would crop the group down to one or two figures */
-  .about__frame { height: clamp(13rem, 58vw, 22rem); }
+  /* The field is the section here, so it is given the height to be one:
+     a wide source in a narrow box crops to the middle of the group, and
+     the only way to read faces at this width is to let it get taller. */
+  .about__frame { height: clamp(19rem, 92vw, 32rem); }
+
+  .about__wrap > .section-label { margin-bottom: clamp(-3.25rem, -7vw, -1rem); }
+
   .about__foot {
     flex-direction: column;
     align-items: flex-start;
     gap: clamp(1.25rem, 3vh, 2rem);
+    padding-inline-end: 0;
   }
+  /* a step down, so the picture is what the section leads with */
+  .about__text { font-size: clamp(0.92rem, 3.6vw, 1.02rem); }
 }
 
 /* ===================================================================
@@ -948,52 +1010,22 @@ body.menu-open { overflow: hidden; }
   letter-spacing: -0.015em;
 }
 
-.contact__social {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-width: 15rem;
-}
-.contact__social a {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.85rem 0;
-  border-bottom: 1px solid var(--rule);
-  color: var(--ink);
-  font-size: clamp(1rem, 1.25vw, 1.2rem);
-  text-decoration: none;
-  transition: color 0.35s var(--ease), border-color 0.35s var(--ease);
-}
-.contact__social svg {
-  width: 1.05rem;
-  height: 1.05rem;
-  flex: none;
-  transition: transform 0.4s var(--ease-out);
-}
-.contact__social a:hover { color: var(--violet-hot); border-bottom-color: var(--violet); }
-.contact__social a:hover svg { transform: translateX(0.25rem); }
-
+/* Both columns are the same list: one destination per line, set the same
+   way, whether it is a section of this page or somewhere else entirely. */
 .contact__links {
   list-style: none;
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-flow: column;
-  grid-template-rows: repeat(3, auto);
-  gap: 0.75rem clamp(1rem, 3vw, 2.5rem);
+  gap: 0.75rem;
 }
-.contact__links a,
-.contact__email {
+.contact__links a {
   color: var(--ink-dim);
   font-size: clamp(0.95rem, 1.15vw, 1.1rem);
   text-decoration: none;
   transition: color 0.3s var(--ease);
 }
-.contact__links a:hover,
-.contact__email:hover { color: var(--ink); }
+.contact__links a:hover { color: var(--ink); }
 
 .contact__mark {
   display: flex;
@@ -1031,16 +1063,15 @@ body.menu-open { overflow: hidden; }
 .mesh.is-live .mesh__img { visibility: hidden; }
 
 @media (max-width: 900px) {
+  /* the title above, then the two columns side by side under it: two short
+     lists stacked would run the footer off the bottom of the screen */
   .contact__grid {
-    grid-template-columns: minmax(0, 1fr);
-    gap: clamp(2.25rem, 6vh, 3.5rem);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(1.75rem, 5vh, 2.75rem) clamp(1.25rem, 5vw, 2.5rem);
   }
-  .contact__social { max-width: none; }
+  .contact__grid > .contact__col:first-child { grid-column: 1 / -1; }
+  .contact__title { margin-bottom: 0; }
   .mesh { height: clamp(9rem, 34vw, 15rem); }
-}
-
-@media (max-width: 560px) {
-  .contact__links { grid-auto-flow: row; grid-template-rows: none; }
 }
 
 /* ---------- reduced motion ------------------------------------------ */

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
 <title>Horizon Symmetry · Digital Presence Studio</title>
 <meta name="description" content="Premium digital identities for early-stage founders, designed to signal credibility, accelerate investor conversations, and launch with the authority of an established brand.">
@@ -256,45 +256,31 @@
   <section class="contact" id="contact" aria-labelledby="contact-title">
     <div class="contact__horizon" aria-hidden="true"></div>
 
+    <!-- Two link columns and nothing else: every destination is set the same
+         way, so the footer reads as one list of places to go rather than as
+         a set of competing buttons. -->
     <div class="contact__grid">
       <div class="contact__col">
         <h2 class="contact__title" id="contact-title">Stay connected</h2>
-        <ul class="contact__social">
-          <li>
-            <a href="https://www.linkedin.com/company/horizonsymmetry" target="_blank" rel="noopener">
-              <span>LinkedIn</span>
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 10h12M10.5 4.5 16 10l-5.5 5.5"/>
-              </svg>
-            </a>
-          </li>
-          <li>
-            <a href="https://www.instagram.com/horizonsymmetry" target="_blank" rel="noopener">
-              <span>Instagram</span>
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.3"
-                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4 10h12M10.5 4.5 16 10l-5.5 5.5"/>
-              </svg>
-            </a>
-          </li>
-        </ul>
       </div>
 
       <div class="contact__col">
         <h3 class="contact__label">Main links</h3>
         <ul class="contact__links">
-          <!-- fills column-first: Home / Projects / Meeting, then Contact us -->
           <li><a href="#hero-content">Home</a></li>
-          <li><a href="#work">Projects</a></li>
           <li><a href="https://cal.com/horizon-symmetry" target="_blank" rel="noopener">Meeting</a></li>
+          <li><a href="#work">Projects</a></li>
           <li><a href="#contact">Contact us</a></li>
         </ul>
       </div>
 
       <div class="contact__col">
         <h3 class="contact__label">Get in touch</h3>
-        <a class="contact__email" href="mailto:horizonsymmetrystudio@gmail.com">horizonsymmetrystudio@gmail.com</a>
+        <ul class="contact__links">
+          <li><a href="mailto:horizonsymmetrystudio@gmail.com">Email</a></li>
+          <li><a href="https://www.linkedin.com/company/horizonsymmetry" target="_blank" rel="noopener">LinkedIn</a></li>
+          <li><a href="https://www.instagram.com/horizonsymmetry" target="_blank" rel="noopener">Instagram</a></li>
+        </ul>
       </div>
     </div>
 
@@ -314,6 +300,7 @@
 /* Unicorn Studio loader, verbatim from the project embed */
 !function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
 </script>
+<script src="lock.js" defer></script>
 <script src="hero.js" defer></script>
 <script src="menu.js" defer></script>
 <script src="work.js" defer></script>
