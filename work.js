@@ -24,11 +24,57 @@
   var track  = section.querySelector(".work__track");
   var stage  = section.querySelector(".work__stage");
   var deck   = section.querySelector(".deck");
+  var copy   = section.querySelector(".work__copy");
   var cards  = Array.prototype.slice.call(section.querySelectorAll(".card"));
   var panels = Array.prototype.slice.call(section.querySelectorAll(".project"));
   if (!track || !stage || !deck || cards.length < 2) return;
 
   var N = cards.length;
+
+  /* --- which section this is ----------------------------------------
+
+     On a phone the stylesheet lays the covers out as a plain column and
+     says so here. None of the deck below runs then: nothing is pinned,
+     nothing is switched, no cover is written to. All that is left is
+     saying which project the description belongs to, and scroll answers
+     that on its own. The mode is re-read on resize, so a window crossing
+     the breakpoint hands over rather than leaving stale inline styles on
+     cards the stylesheet is now placing itself. */
+
+  function isGallery() {
+    return getComputedStyle(deck).getPropertyValue("--deck-mode").trim() === "gallery";
+  }
+
+  var gallery = isGallery();
+
+  function releaseCards() {
+    cards.forEach(function (el) {
+      el.style.cssText = "";
+      el.classList.remove("is-current");
+      el.classList.add("is-sharp");     // the photograph, not the blocks
+    });
+  }
+
+  /* The description belongs to the last cover whose top has gone under
+     the copy block. Reading it as "has passed" rather than "is nearest"
+     means the answer only ever moves one way as you scroll, so a cover
+     sitting across the line cannot flicker the copy between two. */
+  var spyRaf = 0;
+
+  function spy() {
+    spyRaf = 0;
+    var under = copy ? copy.getBoundingClientRect().bottom : 0;
+    var line = under + (window.innerHeight - under) * 0.5;
+    var i = 0;
+    for (var k = 0; k < N; k++) {
+      if (cards[k].getBoundingClientRect().top <= line) i = k;
+    }
+    setCopy(i);
+  }
+
+  function spyLater() {
+    if (!spyRaf) spyRaf = requestAnimationFrame(spy);
+  }
 
   /* --- tuning ------------------------------------------------------- */
 
@@ -212,7 +258,10 @@
     // Cards the deck is only passing through on its way to a distant one
     // get their copy plainly: the shuffle measures every character, and
     // running it four times inside one catch-up buys nothing legible.
-    if (i >= 0 && i === wanted) shuffleIn(i);
+    // In the gallery it never runs at all — a scroll changes the copy
+    // whenever it likes there, and a per-character rebuild each time is
+    // both heavy and busy on a phone. The panels cross-fade instead.
+    if (!gallery && i >= 0 && i === wanted) shuffleIn(i);
     if (prev >= 0 && prev !== i) {
       timers[prev] = (timers[prev] || []).concat(
         setTimeout(function () { restore(prev); }, 320)   // after its fade
@@ -334,20 +383,9 @@
     return wanted;
   }
 
-  /* The spacing between two cards is a share of the deck, which is right
-     while the deck is most of the screen. Stacked under the copy it is not,
-     so the layout is allowed to state the spacing itself in --deck-gap and
-     this reads it back. Unset — every desktop width — it is NaN and the
-     share stands. */
-  var gapPx = 0;
-
-  function readGap() {
-    var v = parseFloat(getComputedStyle(deck).getPropertyValue("--deck-gap"));
-    gapPx = v > 0 ? v : 0;
-  }
-
   function layout() {
-    var step = cards[0].offsetHeight + (gapPx || deck.clientHeight * GAP);
+    if (gallery) return;              // the stylesheet is placing the covers
+    var step = cards[0].offsetHeight + deck.clientHeight * GAP;
 
     for (var i = 0; i < N; i++) {
       var el = cards[i];
@@ -451,6 +489,7 @@
   }
 
   function onScroll() {
+    if (gallery) { spyLater(); return; }
     var next = pick(readScroll());
     if (next !== wanted) {
       wanted = next;
@@ -463,37 +502,51 @@
 
   /* --- boot --------------------------------------------------------- */
 
-  cards.forEach(pxInit);
-  cards.forEach(function (el) {
-    var st = el.__px;
-    if (!st) return;
-    if (st.img.complete && st.img.naturalWidth) pxCoarse(el);
-    else st.img.addEventListener("load", function () { pxCoarse(el); }, { once: true });
-  });
+  if (gallery) {
+    releaseCards();
+    spy();
+  } else {
+    cards.forEach(pxInit);
+    cards.forEach(function (el) {
+      var st = el.__px;
+      if (!st) return;
+      if (st.img.complete && st.img.naturalWidth) pxCoarse(el);
+      else st.img.addEventListener("load", function () { pxCoarse(el); }, { once: true });
+    });
 
-  readGap();
-  u = from = to = wanted = Math.round(readScroll());
-  layout();
+    u = from = to = wanted = Math.round(readScroll());
+    layout();
 
-  // the front card's copy rolls in when the stage arrives, not on load
-  if (window.IntersectionObserver) {
-    var io = new IntersectionObserver(function (entries) {
-      if (!entries[0].isIntersecting) return;
-      io.disconnect();
-      armed = true;
-      shuffleIn(shown < 0 ? 0 : shown);
-      if (from === to) pxResolve(cards[from]);
-    }, { threshold: 0.5 });
-    io.observe(stage);
+    // the front card's copy rolls in when the stage arrives, not on load
+    if (window.IntersectionObserver) {
+      var io = new IntersectionObserver(function (entries) {
+        if (!entries[0].isIntersecting) return;
+        io.disconnect();
+        armed = true;
+        shuffleIn(shown < 0 ? 0 : shown);
+        if (from === to) pxResolve(cards[from]);
+      }, { threshold: 0.5 });
+      io.observe(stage);
+    }
   }
 
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", function () {
-    readGap();                            // the breakpoint may have changed
+    var was = gallery;
+    gallery = isGallery();                // the breakpoint may have changed
+
     for (var k = 0; k < panels.length; k++) restore(k);
+
+    if (gallery) {
+      if (!was) releaseCards();           // hand the covers back to the stylesheet
+      spy();
+      return;
+    }
+
     cards.forEach(function (el) {
       if (el.__px && !el.classList.contains("is-sharp")) pxDraw(el.__px, el.__px.cols || COLS);
     });
+    if (was) { u = from = to = wanted = Math.round(readScroll()); }
     onScroll();
     layout();
   });

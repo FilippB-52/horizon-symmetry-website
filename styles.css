@@ -35,17 +35,6 @@
   font-weight: 400; font-style: normal; font-display: swap;
 }
 
-/* Registered so it computes to a real length. An unregistered custom
-   property computes to the tokens it was written with, and work.js has to
-   read this back as a number. Nothing sets it outside the phone layout, so
-   the 0 initial value is what desktop reports, and work.js falls back to
-   its own spacing there. */
-@property --deck-gap {
-  syntax: "<length>";
-  inherits: false;
-  initial-value: 0px;
-}
-
 :root {
   --void:       #000000;
   --ink:        #FFFFFF;
@@ -824,27 +813,38 @@ body.menu-open { overflow: hidden; }
 /* ---------- narrow screens ------------------------------------------ */
 
 @media (max-width: 900px) {
-  /* a longer run per project: a flick on a phone covers ground a wheel
-     does not, and one screen each was easy to overshoot */
-  .work__track { height: calc((var(--n) + 0.5) * 105svh); }
+  /* ---------- the phone: a gallery, not a deck -----------------------
 
-  /* Stacked, copy first: heading, rule and description hold the top of the
-     screen, the covers run underneath them. */
-  .work__inner {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto minmax(0, 1fr);
-    gap: clamp(1.25rem, 3.5vh, 2rem);
-    padding: 0 var(--gutter);
+     Nothing is pinned here and nothing is switched. The covers are a
+     column you scroll at whatever pace you scroll at, because a deck that
+     answers a flick by playing four projects in a row is unreadable on a
+     touch screen — and a section that holds the page still while it does
+     it is worse. What is left for work.js is to keep the description
+     pointed at the cover you have reached; it reads --deck-mode below and
+     stands down from everything else. */
+
+  .work__track { height: auto; }
+
+  .work__stage {
+    position: static;
+    height: auto;
   }
 
-  /* The copy is also what a cover disappears behind. It carries the page
-     ground edge to edge, from the very top of the screen, and fades out
-     just below itself — so the cover leaving slides under the description
-     and is gone, rather than being cut off against nothing in mid air. */
+  .work__inner {
+    display: block;
+    padding: 0 var(--gutter) clamp(2.5rem, 8vh, 5rem);
+  }
+
+  /* The heading and the description stay with you while their covers go
+     past underneath. The block carries the page ground edge to edge and
+     fades out just below itself, so a cover passing under it goes rather
+     than being cut off against nothing. */
   .work__copy {
+    position: sticky;
+    top: 0;
     background: var(--void);
     margin-inline: calc(var(--gutter) * -1);
-    padding: clamp(2.5rem, 7.5vh, 4.5rem) var(--gutter) 0;
+    padding: clamp(2.5rem, 7.5vh, 4.5rem) var(--gutter) clamp(0.75rem, 2vh, 1.25rem);
     justify-content: flex-start;
   }
   .work__copy::after {
@@ -858,45 +858,46 @@ body.menu-open { overflow: hidden; }
 
   .work__label { font-size: clamp(2rem, 8.6vw, 3.1rem); }
 
-  /* The screen is the frame. The cover coming up runs off the bottom of it
-     and is cut by the edge of the phone, which is the only cut there is. */
-  .work__stage { overflow: hidden; }
-
-  /* Wider than the copy, and spaced further apart than the desktop share —
-     work.js reads --deck-gap and uses it in place of its own. */
-  .deck {
-    /* wide enough that one step carries the cover leaving fully behind the
-       copy: what is above the description is nothing, not a sliver of the
-       last project */
-    --deck-gap: clamp(3.6rem, 9.5vh, 5.2rem);
-    margin-inline: calc(0.9rem - var(--gutter));
-  }
-
-  /* Larger, and nearer the shape the case page opens into, so following a
-     cover is less of a jump. Height leads and the width follows it, so a
-     cover is never stretched to fill the box it is in. It hangs from the
-     top of the deck: the room that matters is the room below it, where the
-     next one comes up from. */
-  .card {
-    --card-h: min(38svh, calc((100vw - 1.8rem) * 0.75));
-    top: clamp(0.35rem, 1.2vh, 0.9rem);
-    height: var(--card-h);
-    width: auto;
-    aspect-ratio: 4 / 3;
-    margin-inline: auto;
-  }
-
   /* every project's copy is stacked in this one cell, so it is as tall as
      the longest of them and never resizes on a change */
   .work__panel { padding-inline: 0; }
-
   .project { align-content: start; }
+  .project.is-active { transition: opacity 0.3s var(--ease); }
 
   .project__body {
     max-width: none;
     padding-right: 0;
   }
   .project__body p { font-size: clamp(0.95rem, 3.4vw, 1.05rem); }
+
+  /* Wider than the copy: the cover is the subject of this section. */
+  .deck {
+    --deck-mode: gallery;
+    position: static;
+    height: auto;
+    perspective: none;
+    display: grid;
+    gap: clamp(1.25rem, 3.5vh, 2rem);
+    margin-inline: calc(0.9rem - var(--gutter));
+    padding-top: clamp(1rem, 3vh, 1.75rem);
+  }
+
+  /* In the flow, at the shape the case page opens into. */
+  .card {
+    position: static;
+    width: auto;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    opacity: 1;
+    pointer-events: auto;
+    will-change: auto;
+  }
+
+  /* No cover waits its turn as blocks: resolving five of them while a
+     flick goes past is the noise that made this section hard to read.
+     Stated here rather than left to work.js, so it holds either way. */
+  .card__px { display: none; }
+  .card:not(.is-sharp) img { visibility: visible; }
 }
 
 /* ===================================================================
@@ -917,6 +918,12 @@ body.menu-open { overflow: hidden; }
   /* held off the edges, so the field reads as set into the page rather
      than bled to it — the feather does the rest */
   padding: clamp(3rem, 9vh, 7rem) clamp(1.5rem, 7vw, 9rem);
+  /* The canvas below deliberately overhangs the frame, and the frame is
+     already the full width of the screen, so the overhang is nothing but
+     width the page does not have. Clipped here rather than left to the
+     body: a document that is wider than the window is a document that
+     pans sideways, which is the other half of holding the page still. */
+  overflow-x: clip;
 }
 
 .about__wrap {
