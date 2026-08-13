@@ -499,10 +499,16 @@ body.menu-open { overflow: hidden; }
   /* The frame is a touch wider than a phone is, so covering shows all of it
      top to bottom and takes the crop off the two sides, where there is
      nothing but dust. Nothing is cut off the subject at any phone size.
-     The plain url is for anything that cannot read image-set. */
+     It hangs a little below the top of the screen, which puts the disc in
+     the middle band the copy leaves for it. The plain url is for anything
+     that cannot read image-set. */
   .hero__still {
     position: absolute;
-    inset: 0;
+    top: clamp(1.5rem, 5svh, 3.5rem);
+    right: 0;
+    bottom: auto;
+    left: 0;
+    height: 100%;
     z-index: 0;
     display: block;
     background-image: url("assets/hero-mobile-1242.jpg");
@@ -514,12 +520,35 @@ body.menu-open { overflow: hidden; }
     background-repeat: no-repeat;
   }
 
-  /* The artwork owns the middle of the screen now, so the copy sits above
-     it: the top third of the frame is empty space the type can hold. */
-  .hero__content {
-    top: clamp(5.25rem, 12svh, 7.5rem);
-    transform: none;
+  /* The frame goes to black under the masthead and comes back by the time
+     the disc starts, so the top of the screen is page rather than picture
+     and the heading is never set on dust. */
+  .hero__still::after {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 34%;
+    background: linear-gradient(to bottom,
+      #000 0%,
+      rgba(0, 0, 0, 0.86) 26%,
+      rgba(0, 0, 0, 0.45) 58%,
+      rgba(0, 0, 0, 0) 100%);
   }
+
+  /* Nothing crosses the disc. The heading holds the top of the screen, the
+     paragraph is pushed to the foot of the hero above the button, and the
+     artwork has the whole band between them to itself. */
+  .hero__content {
+    top: clamp(5.5rem, 12svh, 7.5rem);
+    bottom: clamp(9rem, 19svh, 12rem);
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    transform: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .hero__sub { margin-top: auto; }
 }
 
 @media (max-width: 560px) {
