@@ -42,7 +42,7 @@
   // In order. Every frame is sampled to the same grid and keeps its own
   // buffers for the life of the page, so each one costs what the single
   // picture used to: worth knowing before the list grows long.
-  var SRCS = (section.dataset.frames || section.dataset.src || "assets/team-dots.jpg")
+  var SRCS = (section.dataset.frames || section.dataset.src || "assets/about-1.jpg")
     .split(",")
     .map(function (s) { return s.trim(); })
     .filter(Boolean);
