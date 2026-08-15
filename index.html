@@ -228,18 +228,21 @@
        the first frame and the fallback, and stays if WebGL2 is unavailable.
        data-frames is the sequence, in order: the field assembles the first
        one when this scrolls into view, hands it on to the next, and wraps
-       back round to the first. data-frames-narrow is the same sequence at
-       half width, for the phone layout, where the frame is nearly square
-       and samples a fraction as far across the picture. -->
+       back round to the first. The same sequence is listed at three widths:
+       -narrow for the phone layout, where the frame is nearly square and
+       samples a fraction as far across the picture, and -wide for screens
+       whose grid runs past the standard file. about.js picks one at load. -->
   <section class="about" id="about" aria-labelledby="about-title"
            data-frames="assets/about-1.jpg, assets/about-2.jpg, assets/about-3.jpg"
+           data-frames-wide="assets/about-1-xl.jpg, assets/about-2-xl.jpg, assets/about-3-xl.jpg"
            data-frames-narrow="assets/about-1-sm.jpg, assets/about-2-sm.jpg, assets/about-3-sm.jpg">
     <div class="about__wrap">
       <h2 class="section-label" id="about-title">Our Team</h2>
 
       <div class="about__frame">
         <img class="about__fallback" src="assets/about-1.jpg"
-             srcset="assets/about-1-sm.jpg 2200w, assets/about-1.jpg 4400w" sizes="100vw"
+             srcset="assets/about-1-sm.jpg 2200w, assets/about-1.jpg 4400w, assets/about-1-xl.jpg 5504w"
+             sizes="100vw"
              alt="The Horizon Symmetry team, rendered as a field of particles"
              width="4400" height="2456" loading="lazy" decoding="async">
         <canvas class="about__canvas" aria-hidden="true"></canvas>

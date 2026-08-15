@@ -43,13 +43,24 @@
   // buffers for the life of the page, so each one costs what the single
   // picture used to: worth knowing before the list grows long.
   //
-  // Below the breakpoint the frame is nearly square, so cover scales the
-  // picture by its height and a phone samples barely 800px across it. It
-  // is served half-width files: the same picture, a quarter of the bytes,
-  // and no difference it could possibly show. The breakpoint is the one
-  // in styles.css, because that is where the frame changes shape.
+  /* Three widths, because the grid this samples varies by a factor of six
+     across the screens it runs on.
+
+     Below the styles.css breakpoint the frame is nearly square, cover
+     scales the picture by its height, and a phone samples barely 800px
+     across it: half-width files, a quarter of the bytes, no difference it
+     could possibly show. Past 2300css the grid runs wider than the
+     standard file — a 27in screen samples 4690 across and an ultrawide
+     5437 — so those get the full master rather than a file stretched to
+     reach them. Everything between is covered by the standard tier.
+
+     Chosen once, at load. A window resized across a boundary keeps what
+     it already has, which is the right trade: the files are large and
+     the difference at the boundary is not visible. */
+  var wide   = matchMedia("(min-width: 2300px)").matches;
   var narrow = matchMedia("(max-width: 900px)").matches;
   var SRCS = ((narrow && section.dataset.framesNarrow) ||
+              (wide && section.dataset.framesWide) ||
               section.dataset.frames || section.dataset.src || "assets/about-1.jpg")
     .split(",")
     .map(function (s) { return s.trim(); })
