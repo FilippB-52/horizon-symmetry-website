@@ -9,13 +9,20 @@
    Points below a luminance floor are dropped once on the CPU, so the
    black sky costs nothing and the buffer holds only lit pixels.
 
+   The section runs a sequence, not a single picture. Each frame in
+   `data-frames` gets its own point cloud, sampled to the same grid. A
+   frame holds, breaks apart into the scatter the entrance came out of,
+   and the next one gathers out of the same cloud while it is still
+   flying — so the two never read as a cut between images, only as the
+   light rearranging itself. With one frame listed there is nothing to
+   hand on to and the field simply assembles once, as it always did.
+
    The cursor pushes every point inside its radius out to the rim, which
    opens a clean void and packs the displaced light around its edge. The
    field also feathers out at all four sides, so a full-bleed image can
    meet the page without a cut.
 
-   Particles assemble once, the first time the section is scrolled to,
-   and never scatter again. See styles.css `.about`.
+   See styles.css `.about`.
    =================================================================== */
 
 (function () {
@@ -32,7 +39,14 @@
 
   /* --- tuning ------------------------------------------------------- */
 
-  var SRC        = section.dataset.src || "assets/team-dots.jpg";
+  // In order. Every frame is sampled to the same grid and keeps its own
+  // buffers for the life of the page, so each one costs what the single
+  // picture used to: worth knowing before the list grows long.
+  var SRCS = (section.dataset.frames || section.dataset.src || "assets/team-dots.jpg")
+    .split(",")
+    .map(function (s) { return s.trim(); })
+    .filter(Boolean);
+
   // Dimmer than this is sky and is dropped. Low, deliberately: at 9 the
   // faint haze around the figures went with it and the picture read as
   // isolated dots. At 5 it keeps 95% of the light for 55% of the pixels.
@@ -42,6 +56,10 @@
   var MAX_DPR    = 2;
 
   var ENTER_MS   = 2200;      // how long the assembly takes
+  var EXIT_MS    = 1700;      // and how long a frame takes to come apart
+  var LAG_MS     = 380;       // head start the outgoing frame gets: short, so
+                              // the two clouds are in the air together
+  var HOLD_MS    = 4200;      // how long an assembled frame is held
   var STAGGER    = 0.45;      // share of it spent waiting for a turn
   var THROW      = 0.75;      // scatter distance, share of the long side
   var EDGE       = 0.45;      // canvas-edge fade, share of the overhang
@@ -72,6 +90,8 @@
     "uniform float uPush;",
     "uniform float uStrength;",
     "uniform float uProgress;",
+    "uniform float uExit;",     // 0 gathering, 1 coming apart
+    "uniform float uSeed;",     // one scatter field per pass
     "uniform float uScatter;",
     "uniform float uStagger;",
     "uniform vec3  uFeather;",  // fade widths: sides, top, bottom
@@ -100,20 +120,36 @@
     // boundary between two, which is the difference between a crisp dot
     // and one smeared across a seam.
     "  vec2 home = aHome + 0.5;",
-    "  float h1 = hash(home);",
-    "  float h2 = hash(home + 17.3);",
-    "  float h3 = hash(home * 0.7 + 3.1);",
+    // A pass gets its own offset into the noise, so a frame never leaves
+    // along the path the one before it arrived on.
+    "  vec2 sd = vec2(uSeed, uSeed * 1.73);",
+    "  float h1 = hash(home + sd);",
+    "  float h2 = hash(home + 17.3 + sd);",
+    "  float h3 = hash(home * 0.7 + 3.1 + sd);",
 
     "  vec2 uv = (home - uImgO) / uImgS;",
 
     // The wave along the bottom lands first, so the figures resolve last.
-    "  float delay = (0.55 * h3 + 0.45 * (1.0 - uv.y)) * uStagger;",
+    // A frame on its way out runs the wave from the other side, so it is
+    // already breaking up along the top while the next one is still
+    // gathering from below.
+    "  float delay = (0.55 * h3 + 0.45 * mix(1.0 - uv.y, uv.y, uExit)) * uStagger;",
     "  float local = clamp((uProgress - delay) / max(0.0001, 1.0 - uStagger), 0.0, 1.0);",
-    "  float e = 1.0 - pow(1.0 - local, 4.0);",
+    // The arrival is sharp: nearly all of the travel is spent slowing down
+    // into place. The departure is deliberately not — at the same power the
+    // picture is gone within a few frames and leaves a hole where the next
+    // one has not arrived yet, so it comes apart on a flatter curve.
+    "  float e = 1.0 - pow(1.0 - local, mix(4.0, 2.0, uExit));",
+
+    // k is 1 at home and 0 fully scattered: the entrance read forwards,
+    // the exit read out of it. Light is held a little past the movement
+    // on the way out, so a frame comes apart rather than switching off.
+    "  float k = mix(e, 1.0 - e, uExit);",
+    "  float a = mix(e, pow(1.0 - e, 0.55), uExit);",
 
     "  float ang  = h1 * 6.2831853;",
     "  float dist = (0.35 + 0.65 * h2) * uScatter;",
-    "  vec2 pos = mix(home + vec2(cos(ang), sin(ang)) * dist, home, e);",
+    "  vec2 pos = mix(home + vec2(cos(ang), sin(ang)) * dist, home, k);",
 
     // Pushing every point out to the rim would empty a perfect disc, which
     // reads as a black circle dragged over the picture rather than as pixels
@@ -150,7 +186,7 @@
     "  float sh = max(shade(uDim0, pos, uDimAS.y), shade(uDim1, pos, uDimAS.y));",
     "  float dim = 1.0 - uDimAS.x * sh;",
 
-    "  vColor = vec4(aColor.rgb, aColor.a * e * fx * fy * edge * dim);",
+    "  vColor = vec4(aColor.rgb, aColor.a * a * fx * fy * edge * dim);",
     "  gl_PointSize = 1.0;",
     "  vec2 clip = (pos / uRes) * 2.0 - 1.0;",
     "  gl_Position = vec4(clip.x, -clip.y, 0.0, 1.0);",
@@ -179,17 +215,25 @@
   });
   if (!gl) return;   // the <img> underneath stays
 
-  var prog = null, vao = null, count = 0, loc = {};
+  var prog = null, loc = {};
   var W = 0, H = 0;                    // the picture, CSS px
   var PW = 0, PH = 0;                  // the canvas, device px
   var IX = 0, IY = 0, IW = 0, IH = 0;  // the picture within it, device px
   var dpr = 1;
 
-  var img = null, fetching = false;
-  var entered = false, wantsEnter = false, enterStart = 0;
-  var progress = 0, strength = 0, targetStrength = 0;
+  var imgs = [];        // decoded sources, by frame
+  var sets = [];        // { vao, count } per frame, once sampled
+  var fetching = false;
 
-  var raf = 0, running = false;
+  // cur is the frame at home or gathering; prev is the one coming apart,
+  // -1 when the field is showing a single picture.
+  var cur = 0, prev = -1;
+  var entered = false, wantsEnter = false;
+  var enterStart = 0, exitStart = 0, holdFrom = 0;
+  var progress = 0, outProgress = 0;
+  var strength = 0, targetStrength = 0;
+
+  var raf = 0, running = false, parkedAt = 0;
   var idle = 0;
 
   var mouse = { x: -1e5, y: -1e5 };      // device px, smoothed
@@ -222,7 +266,7 @@
     if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
 
     ["uRes", "uMouse", "uRadius", "uPush", "uStrength", "uProgress",
-     "uScatter", "uStagger", "uFeather", "uSpeed",
+     "uExit", "uSeed", "uScatter", "uStagger", "uFeather", "uSpeed",
      "uImgO", "uImgS", "uEdge",
      "uDim0", "uDim1", "uDimAS"].forEach(function (n) {
       loc[n] = gl.getUniformLocation(prog, n);
@@ -244,11 +288,12 @@
   // One point per device pixel of the backing store: the image is drawn
   // to cover at exactly that size, so home positions land on pixel
   // centres and the field is pixel-identical to the source at rest.
-  function build() {
+  // Every frame is sampled to the same grid, so they scatter into and out
+  // of one another without anything having to be scaled between them.
+  function buildSet(i) {
+    var img = imgs[i];
     if (!img || !IW || !IH || !prog) return;
 
-    // Only the picture is sampled, at exactly its own device size, so home
-    // positions land on pixel centres and nothing is resampled twice.
     var off = document.createElement("canvas");
     off.width = IW;
     off.height = IH;
@@ -276,8 +321,8 @@
     for (var y = 0; y < IH; y++) {
       var row = y * IW;
       for (var x = 0; x < IW; x++) {
-        var i = (row + x) * 4;
-        var r = px[i], g = px[i + 1], b = px[i + 2];
+        var p = (row + x) * 4;
+        var r = px[p], g = px[p + 1], b = px[p + 2];
         // Rec. 601 luma, in 0..255
         if (r * 0.299 + g * 0.587 + b * 0.114 < cut) continue;
         var h2 = n * 2, c4 = n * 4;
@@ -292,11 +337,10 @@
       }
     }
 
-    count = n;
-    if (!count) return;
+    if (!n) return;
 
-    if (vao) gl.deleteVertexArray(vao);
-    vao = gl.createVertexArray();
+    if (sets[i]) gl.deleteVertexArray(sets[i].vao);
+    var vao = gl.createVertexArray();
     gl.bindVertexArray(vao);
 
     var hb = gl.createBuffer();
@@ -314,9 +358,19 @@
     gl.vertexAttribPointer(aColor, 4, gl.UNSIGNED_BYTE, true, 0, 0);
 
     gl.bindVertexArray(null);
+    sets[i] = { vao: vao, count: n };
+  }
 
-    // A rebuild after the entrance has run must not replay it.
+  // A rebuild after the entrance has run must not replay it, and must not
+  // leave half a handover on screen.
+  function build() {
+    if (!prog || !IW || !IH) return;
+    for (var i = 0; i < SRCS.length; i++) if (imgs[i]) buildSet(i);
+    if (!sets[cur]) return;     // nothing sampled yet; the <img> holds
+
+    prev = -1;
     progress = entered ? 1 : 0;
+    holdFrom = 0;
     measureDim();               // the copy may have laid out after sizing
     frame.classList.add("is-live");
     if (wantsEnter) enter();
@@ -325,12 +379,40 @@
 
   function enter() {
     if (entered) return;
-    if (!count) { wantsEnter = true; return; }   // samples not in yet
+    if (!sets[cur]) { wantsEnter = true; return; }   // samples not in yet
     entered = true;
     wantsEnter = false;
     enterStart = performance.now();
     section.classList.add("is-in");
     wake();
+  }
+
+  // The next frame that has actually been sampled, so a source that is
+  // slow to arrive is skipped rather than showing as a gap.
+  function nextIndex(i) {
+    for (var n = 1; n <= SRCS.length; n++) {
+      var j = (i + n + SRCS.length) % SRCS.length;
+      if (sets[j]) return j;
+    }
+    return i;
+  }
+
+  function built() {
+    var n = 0;
+    for (var i = 0; i < SRCS.length; i++) if (sets[i]) n++;
+    return n;
+  }
+
+  // Hand the field to the next frame: this one starts coming apart, and
+  // the next gathers out of the same cloud a beat later.
+  function advance(now) {
+    prev = cur;
+    exitStart = now;
+    outProgress = 0;
+    cur = nextIndex(cur);
+    enterStart = now + LAG_MS;
+    progress = 0;
+    holdFrom = 0;
   }
 
   /* --- sizing ------------------------------------------------------- */
@@ -405,16 +487,41 @@
 
   /* --- frame -------------------------------------------------------- */
 
+  function pass(set, p, exit, seed) {
+    if (!set || !set.count) return;
+    if (!exit && p <= 0) return;      // not started
+    if (exit && p >= 1) return;       // gone
+    gl.uniform1f(loc.uProgress, p);
+    gl.uniform1f(loc.uExit, exit);
+    gl.uniform1f(loc.uSeed, seed);
+    gl.bindVertexArray(set.vao);
+    gl.drawArrays(gl.POINTS, 0, set.count);
+    gl.bindVertexArray(null);
+  }
+
   function render() {
     raf = requestAnimationFrame(render);
-    if (!count || !prog) return;
+    if (!prog || !sets[cur]) return;
 
     var now = performance.now();
     var moving = false;
 
-    if (entered && progress < 1) {
-      progress = Math.min(1, (now - enterStart) / ENTER_MS);
-      moving = true;
+    if (entered) {
+      if (progress < 1) {
+        progress = Math.max(0, Math.min(1, (now - enterStart) / ENTER_MS));
+        moving = true;
+      }
+      if (prev >= 0) {
+        outProgress = Math.min(1, (now - exitStart) / EXIT_MS);
+        if (outProgress >= 1) prev = -1;
+        moving = true;
+      }
+      // An assembled frame is held, then handed on. With nothing to hand
+      // it to, holdFrom never gets set and the field rests where it is.
+      if (prev < 0 && progress >= 1 && built() > 1) {
+        if (!holdFrom) holdFrom = now;
+        else if (now - holdFrom >= HOLD_MS) { advance(now); moving = true; }
+      }
     }
 
     // The push ramps rather than snapping, so leaving the frame lets the
@@ -439,14 +546,18 @@
     if (speed > 0.004) { speed *= 0.9; moving = true; }
     else speed = 0;
 
-    /* The picture is static, so a settled field has nothing to redraw.
-       The loop parks on stillness and the last frame holds — which is what
-       preserveDrawingBuffer on the context is for. */
+    /* A settled field has nothing to redraw. The loop parks on stillness
+       and the last frame holds — which is what preserveDrawingBuffer on
+       the context is for. A frame being held is settled but not finished:
+       there the loop stays alive to hand it on, and simply draws nothing
+       until it does. */
     idle = moving ? 0 : idle + 1;
-    if (idle > SLEEP) { park(); return; }
+    if (idle > SLEEP) {
+      if (!holdFrom) park();
+      return;
+    }
 
     gl.useProgram(prog);
-    gl.uniform1f(loc.uProgress, progress);
     gl.uniform1f(loc.uStrength, strength);
     gl.uniform1f(loc.uRadius,
       Math.min(RADIUS_MAX, Math.max(RADIUS_MIN, W * RADIUS)) * dpr);
@@ -454,19 +565,30 @@
     gl.uniform1f(loc.uSpeed, speed);
 
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.bindVertexArray(vao);
-    gl.drawArrays(gl.POINTS, 0, count);
-    gl.bindVertexArray(null);
+    // the outgoing frame first: the one arriving belongs on top of it
+    if (prev >= 0) pass(sets[prev], outProgress, 1, prev * 3.7 + 1.9);
+    pass(sets[cur], progress, 0, cur * 3.7);
   }
 
   function wake() {
     idle = 0;
     if (running) return;
+    /* Time did not pass for the field while it was parked. Without this
+       a section scrolled away from and come back to would find its hold
+       long expired and cut straight to the next frame. */
+    if (parkedAt) {
+      var gap = performance.now() - parkedAt;
+      if (enterStart) enterStart += gap;
+      if (exitStart)  exitStart  += gap;
+      if (holdFrom)   holdFrom   += gap;
+      parkedAt = 0;
+    }
     running = true;
     raf = requestAnimationFrame(render);
   }
 
   function park() {
+    if (running) parkedAt = performance.now();
     running = false;
     cancelAnimationFrame(raf);
   }
@@ -529,15 +651,31 @@
   });
   ro.observe(frame);
 
-  // Fetch the source only once the section is within reach.
+  // Fetch the sources only once the section is within reach. They are
+  // sampled as they land, in whatever order they land in; the sequence
+  // starts as soon as a second one is ready.
   new IntersectionObserver(function (entries, obs) {
     if (!entries[0].isIntersecting || fetching) return;
     fetching = true;
     obs.disconnect();
-    var im = new Image();
-    im.decoding = "async";
-    im.onload = function () { img = im; build(); };
-    im.src = SRC;
+    SRCS.forEach(function (src, i) {
+      var im = new Image();
+      im.decoding = "async";
+      im.onload = function () {
+        imgs[i] = im;
+        if (!IW || !IH) return;        // the resize will sample it
+        buildSet(i);
+        /* The sequence always opens on its first frame. A later one that
+           decodes sooner waits its turn rather than taking the opening,
+           which is what order in the attribute means. */
+        if (i === 0 && sets[0]) {
+          frame.classList.add("is-live");
+          if (wantsEnter) enter();
+        }
+        wake();
+      };
+      im.src = src;
+    });
   }, { rootMargin: "100% 0px" }).observe(section);
 
   // Assemble once, when the section is properly in view rather than just

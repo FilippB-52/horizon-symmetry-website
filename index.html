@@ -224,16 +224,19 @@
       </div>
   </section>
 
-  <!-- The image is redrawn as one GPU point per device pixel; the <img> is
-       both the source and the fallback, and stays if WebGL2 is unavailable.
-       The points assemble once, the first time this scrolls into view. -->
+  <!-- Each frame is redrawn as one GPU point per device pixel; the <img> is
+       the first frame and the fallback, and stays if WebGL2 is unavailable.
+       data-frames is the sequence, in order: the field assembles the first
+       one when this scrolls into view, then hands it on to the next. Frames
+       2 and 3 drop in here as they are made — the last entry is the old team
+       picture, standing in so the handover has somewhere to go. -->
   <section class="about" id="about" aria-labelledby="about-title"
-           data-src="assets/team-dots.jpg">
+           data-frames="assets/about-1.jpg, assets/team-dots.jpg">
     <div class="about__wrap">
       <h2 class="section-label" id="about-title">Our Team</h2>
 
       <div class="about__frame">
-        <img class="about__fallback" src="assets/team-dots.jpg"
+        <img class="about__fallback" src="assets/about-1.jpg"
              alt="The Horizon Symmetry team, rendered as a field of particles"
              width="3200" height="1786" loading="lazy" decoding="async">
         <canvas class="about__canvas" aria-hidden="true"></canvas>

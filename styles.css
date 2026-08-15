@@ -153,9 +153,12 @@ body {
   border: 0;
   /* full white, not the dim ink: it sits on the busiest part of the page */
   color: var(--ink);
-  font-family: var(--display);
-  font-size: clamp(0.8rem, 0.95vw, 0.92rem);
-  letter-spacing: 0.16em;
+  /* the pixel face, as on the headings: it sets small here, so it is given
+     back the size the grotesque did not need */
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(0.95rem, 1.15vw, 1.12rem);
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
   opacity: 0;
@@ -239,11 +242,14 @@ body {
   display: inline-block;
   padding: clamp(0.15rem, 0.8vh, 0.4rem) 0;
   color: var(--ink);
-  font-family: var(--display);
-  font-weight: 500;
-  font-size: clamp(2rem, 7vw, 4.5rem);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+  /* set like every other heading on the site. Mondwest has one weight and
+     needs no negative tracking: it is already tight on its own grid, and
+     the taller ascenders want the extra leading. */
+  font-family: var(--pixel);
+  font-weight: 400;
+  font-size: clamp(2.1rem, 7.2vw, 4.7rem);
+  line-height: 1.16;
+  letter-spacing: 0;
   text-decoration: none;
 }
 
