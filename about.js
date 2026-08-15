@@ -60,7 +60,20 @@
   // isolated dots. At 5 it keeps 95% of the light for 55% of the pixels.
   var LUMA_CUT   = 5 / 255;
   var GAIN       = 1.28;      // lifts the whole field; baked in at build
-  var MAX_PIXELS = 5.2e6;     // budget for the picture itself, not the canvas
+  /* Budget for the picture itself, not the canvas.
+
+     This is what decides how much of a wide screen the field actually
+     resolves. Below the budget MAX_DPR binds instead and the points land
+     one per physical pixel; above it the backing store comes out smaller
+     than the area it covers and the browser stretches the whole field to
+     fit, which blurs every point at once — at 5.2e6 that began at about
+     1760css and reached a 0.81 render scale on a 27in screen.
+
+     Raising it costs nothing on any window narrow enough for MAX_DPR to
+     bind, since the budget is not what is limiting those. It buys back
+     the wide ones, where it is paid for in point buffers: about 29MB a
+     frame at the ceiling, and every frame in the sequence keeps its own. */
+  var MAX_PIXELS = 6.6e6;
   var MAX_DPR    = 2;
 
   var ENTER_MS   = 2200;      // how long the assembly takes
