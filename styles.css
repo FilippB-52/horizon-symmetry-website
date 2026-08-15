@@ -294,7 +294,16 @@ body.menu-open { overflow: hidden; }
 
 .hero {
   position: relative;
+  /* svh is the viewport with the browser's chrome at its largest, which is
+     the safe assumption for content that must not be cut — but it is the
+     wrong one for a section whose whole job is to fill the screen. In an
+     in-app browser, opened from a link in Telegram or WhatsApp, the chrome
+     is not Safari's, so svh comes up short of what is actually on screen
+     and the strip below the hero shows on arrival. dvh is whatever is
+     really visible. The svh line stays under it for anything that cannot
+     read dvh. */
   min-height: 100svh;
+  min-height: 100dvh;
   overflow: hidden;
   background: var(--void);
 }
@@ -339,16 +348,29 @@ body.menu-open { overflow: hidden; }
   font-family: var(--pixel);
   font-weight: 400;
   font-size: clamp(2.35rem, 6vw, 5.3rem);
-  /* the pixel face carries taller ascenders than the grotesque did, and
-     .line clips anything the leading does not make room for */
-  line-height: 1.16;
+  /* Set solid. The leading used to be carrying two jobs — the gap between
+     the lines, and the room .line needs under the baseline before its clip
+     cuts a descender — so closing the gap cut the y in Reality. .line pays
+     for the descender itself now, and this only has to answer for the
+     gap. */
+  line-height: 1;
   letter-spacing: 0;
+  /* the 0.06em that used to sit under the last line, kept here now that
+     .line contributes none — and it stops .line's negative margin
+     collapsing out through the bottom of the heading */
+  padding-bottom: 0.06em;
 }
 
+/* The padding is clip room, not spacing: it opens the box under the
+   baseline so a descender survives the reveal, and the equal negative
+   margin takes all of it back out of the layout. So the gap between the
+   two lines is the leading and nothing else, and the paragraph below does
+   not move. */
 .line {
   display: block;
   overflow: hidden;
-  padding-bottom: 0.06em;
+  padding-bottom: 0.16em;
+  margin-bottom: -0.16em;
 }
 .line__inner {
   display: block;
@@ -884,6 +906,15 @@ body.menu-open { overflow: hidden; }
     position: static;
     height: auto;
     perspective: none;
+    /* Flattened, and not only for tidiness. There is no depth left here to
+       preserve — the covers are a column in the flow. But a preserve-3d
+       box is a 3D rendering context, and WebKit composites one of those as
+       a single unit that can land in front of a sticky sibling whatever
+       the paint order says: the covers come out over the heading that is
+       meant to be holding above them, and the ones already scrolled past
+       pile up at the top of the screen. Chrome does not do it, which is
+       why this only ever showed on a phone. */
+    transform-style: flat;
     display: grid;
     gap: clamp(1.25rem, 3.5vh, 2rem);
     margin-inline: calc(0.9rem - var(--gutter));

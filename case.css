@@ -45,11 +45,15 @@
   border-radius: 0.35rem;
   text-decoration: none;
 }
-/* the same height as .brand__mark on the landing page */
+/* Set to the height of the button opposite it, rather than to its own
+   scale: the two are the only objects in the bar, they sit at the same
+   eye level, and any difference between them reads as the mark being
+   oversized. 2.9em is .bar__end's height, and --bar-text is its font
+   size, so the mark tracks the button wherever the button goes. */
 .bar__brand img {
   display: block;
   width: auto;
-  height: clamp(2.5rem, 3.5vw, 3.25rem);
+  height: calc(var(--bar-text) * 2.9);
   transition: transform 0.5s var(--ease-out), filter 0.5s var(--ease);
 }
 .bar__brand:hover img {
@@ -391,7 +395,15 @@
 @media (max-width: 900px) {
   .case { --rail: 0px; }
 
-  .bar__nav { gap: 1rem; }
+  /* The four links are centred between the mark and the button, and at a
+     fixed 1rem they ran into the button below about 375px — an SE or a
+     mini put Contact under the pill. The gap gives way with the screen
+     instead, which is the only one of the three that can. */
+  .bar__nav { gap: clamp(0.5rem, 3.2vw, 1rem); }
+  /* and below that the words themselves give a little, which is what
+     finally clears an SE — the mark and the button are both fixed to the
+     bar's height and cannot help */
+  .bar__nav a { font-size: clamp(0.8rem, 3.4vw, var(--bar-text)); }
   .bar__end span { display: none; }
 
   /* The rail stops being a rail. Dissolving it lets its two halves take
