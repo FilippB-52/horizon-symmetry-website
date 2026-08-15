@@ -42,7 +42,15 @@
   // In order. Every frame is sampled to the same grid and keeps its own
   // buffers for the life of the page, so each one costs what the single
   // picture used to: worth knowing before the list grows long.
-  var SRCS = (section.dataset.frames || section.dataset.src || "assets/about-1.jpg")
+  //
+  // Below the breakpoint the frame is nearly square, so cover scales the
+  // picture by its height and a phone samples barely 800px across it. It
+  // is served half-width files: the same picture, a quarter of the bytes,
+  // and no difference it could possibly show. The breakpoint is the one
+  // in styles.css, because that is where the frame changes shape.
+  var narrow = matchMedia("(max-width: 900px)").matches;
+  var SRCS = ((narrow && section.dataset.framesNarrow) ||
+              section.dataset.frames || section.dataset.src || "assets/about-1.jpg")
     .split(",")
     .map(function (s) { return s.trim(); })
     .filter(Boolean);
