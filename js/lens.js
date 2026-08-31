@@ -37,9 +37,9 @@
 
   var PATCH = 1.5;    // source area copied, as a multiple of the lens
   var TEX   = 512;    // texture the patch is composited into
-  var ZOOM  = 1.22;   // magnification at the centre — noticeable, not a telescope
-  var BEND  = 0.34;   // outward push, confined to the rim
-  var ABERR = 0.008;  // channel separation at the rim — barely there on purpose
+  var ZOOM  = 1.32;   // magnification at the centre — noticeable, not a telescope
+  var BEND  = 0.46;   // outward push, confined to the rim
+  var ABERR = 0.011;  // channel separation at the rim — barely there on purpose
   var BLUR  = 0.016;  // how far the rim smears, in patch-UV units
   var EDGE0 = 0.60;   // where the rim band starts
   var EASE  = 0.22;   // how much of the distance to the pointer per frame
