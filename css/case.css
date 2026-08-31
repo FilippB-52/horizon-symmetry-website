@@ -147,11 +147,16 @@
   gap: var(--gap);
 }
 
-.pair {
+/* .pair is two frames side by side; .row is the same thing for three.
+   Both share one height, and with .shot--fit each one's flex-grow is its
+   own ratio, so any mix of shapes lands on a single common baseline. */
+.pair,
+.row {
   display: flex;
   gap: var(--gap);
 }
-.pair .shot { flex: 1; min-width: 0; }
+.pair .shot,
+.row .shot { flex: 1; min-width: 0; }
 
 .shot {
   margin: 0;
@@ -163,9 +168,28 @@
 .shot--wide { height: 46svh; }
 .shot--half { height: 58svh; }
 
-.shot img {
+/* A frame that takes its shape from the picture instead of the viewport.
+   --r is the image's own width/height, so nothing is ever cropped. In a
+   pair, flex-grow is that same number: two frames of any two shapes then
+   land on exactly one shared height. */
+.shot.shot--fit {
+  height: auto;
+  aspect-ratio: var(--r);
+}
+.pair .shot.shot--fit,
+.row .shot.shot--fit { flex: var(--r) 1 0; }
+
+/* Every frame is already cut to the shape of what it holds, so the media
+   fills it edge to edge. Stated on the element as well as the class,
+   because a <video> carries width/height attributes that would otherwise
+   lay it out at its own pixel size and spill it out of the frame. */
+.shot img,
+.shot video,
+.shot__cover,
+.shot__clip {
   width: 100%;
   height: 100%;
+  max-width: 100%;
   object-fit: cover;
   display: block;
 }
@@ -431,8 +455,14 @@
   .shot,
   .shot--half { height: 54svh; }
   .shot--wide { height: 38svh; }
+  .shot.shot--fit { height: auto; }
 
-  .pair { flex-direction: column; }
+  .pair,
+  .row { flex-direction: column; }
+  /* the pair stacks here, so flex-basis would size the height, not the
+     width, and a basis of 0 would flatten the frame — hand it back */
+  .pair .shot.shot--fit,
+  .row .shot.shot--fit { flex: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

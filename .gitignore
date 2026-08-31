@@ -3,9 +3,4 @@ node_modules/
 .vercel/
 
 # Raw working material, not used by the site (kept local only)
-Hero/
-Negative Star Favicon Logo/
-Typogrpaphy/
-nonstop branding - visual reference/
-Team dots.png
-About us section/
+_source/

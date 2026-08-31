@@ -100,12 +100,25 @@ window.CaseView = (function () {
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", sync);
 
+  /* The clips autoplay from their own attributes. A muted, inline, looping
+     video is allowed to start on its own in every current browser, and the
+     markup says so, so there is nothing to drive from here — the one job
+     left is to nudge any element a page-in-place open left paused. */
+  var clips = Array.prototype.slice.call(root.querySelectorAll(".shot__clip"));
+
+  clips.forEach(function (v) {
+    v.muted = true;                 // Safari reads the property, not the attribute
+    var go = v.play();
+    if (go && go.catch) go.catch(function () {});
+  });
+
   live = {
     stop: function () {
       removeEventListener("scroll", onScroll);
       removeEventListener("resize", sync);
       cancelAnimationFrame(raf);
       if (watch) watch.disconnect();
+      clips.forEach(function (v) { v.pause(); });
       live = null;
     }
   };

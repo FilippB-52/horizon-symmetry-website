@@ -20,8 +20,8 @@
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="styles.css">
-<link rel="stylesheet" href="case.css">
+<link rel="stylesheet" href="css/styles.css?v=202608291318">
+<link rel="stylesheet" href="css/case.css?v=202608291318">
 </head>
 
 <body class="case" style="--accent: #B9A98C">
@@ -142,52 +142,75 @@
     </a>
   </aside>
 
-  <!-- Placeholder frames. Swap a .ph for <img src="…" alt="…"> and the
-       layout is unchanged, .shot img is already sized to cover. -->
+  <!-- Twelve frames in the delivered order. Each carries its own --r, so
+       the frame is the shape of the picture and nothing is cropped. -->
   <div class="gallery">
-    <figure class="shot shot--tall">
-      <img class="shot__cover" src="assets/work/crude.jpg" alt="CRUDE"
-           width="1600" height="1000" fetchpriority="high" decoding="async">
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <img class="shot__cover" src="assets/crude/crude-01.jpg" alt="The CRUDE logotype over an oil platform at sunset"
+           width="2000" height="1125" fetchpriority="high" decoding="async">
     </figure>
     <div class="pair">
-      <figure class="shot shot--half">
-        <div class="ph">Photo 02</div>
+      <figure class="shot shot--fit" style="--r: 0.8978">
+        <img src="assets/crude/crude-02.jpg" alt="The brand book open on the line: energy shapes the world, read what shapes energy"
+             width="1248" height="1390" loading="lazy" decoding="async">
       </figure>
-      <figure class="shot shot--half">
-        <div class="ph">Photo 03</div>
-      </figure>
-    </div>
-    <figure class="shot shot--wide">
-      <div class="ph">Photo 04</div>
-    </figure>
-    <figure class="shot shot--tall">
-      <div class="ph">Photo 05</div>
-    </figure>
-    <div class="pair">
-      <figure class="shot shot--half">
-        <div class="ph">Photo 06</div>
-      </figure>
-      <figure class="shot shot--half">
-        <div class="ph">Photo 07</div>
+      <figure class="shot shot--fit" style="--r: 0.8978">
+        <img src="assets/crude/crude-03.jpg" alt="A second spread from the brand book"
+             width="1248" height="1390" loading="lazy" decoding="async">
       </figure>
     </div>
-    <figure class="shot shot--tall">
-      <div class="ph">Photo 08</div>
+    <figure class="shot shot--fit" style="--r: 2.0">
+      <img src="assets/crude/crude-04.jpg" alt="The colour system: Shadow Black, Almond Frost, Aztec Gold and bone"
+           width="2000" height="1000" loading="lazy" decoding="async">
+    </figure>
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <img src="assets/crude/crude-05.jpg" alt="The logotype in place"
+           width="2000" height="1125" loading="lazy" decoding="async">
     </figure>
     <div class="pair">
-      <figure class="shot shot--half">
-        <div class="ph">Photo 09</div>
+      <figure class="shot shot--fit" style="--r: 0.8978">
+        <img src="assets/crude/crude-06.jpg" alt="An editorial application of the identity"
+             width="1248" height="1390" loading="lazy" decoding="async">
       </figure>
-      <figure class="shot shot--half">
-        <div class="ph">Photo 10</div>
+      <figure class="shot shot--fit" style="--r: 1">
+        <video class="shot__clip" width="1440" height="1440"
+               autoplay muted loop playsinline preload="auto"
+               aria-label="A second editorial application, in motion">
+          <source src="assets/crude/crude-07.mp4" type="video/mp4">
+        </video>
       </figure>
     </div>
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <img src="assets/crude/crude-08.jpg" alt="The newsletter template running the type hierarchy"
+           width="2000" height="1125" loading="lazy" decoding="async">
+    </figure>
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <video class="shot__clip" width="2560" height="1440"
+             autoplay muted loop playsinline preload="auto"
+             aria-label="The identity applied across the weekly cadence, in motion">
+        <source src="assets/crude/crude-09.mp4" type="video/mp4">
+      </video>
+    </figure>
+    <div class="pair">
+      <figure class="shot shot--fit" style="--r: 0.7495">
+        <img src="assets/crude/crude-10.jpg" alt="The mark at favicon size in a browser tab"
+             width="832" height="1110" loading="lazy" decoding="async">
+      </figure>
+      <figure class="shot shot--fit" style="--r: 1.4991">
+        <img src="assets/crude/crude-11.jpg" alt="The site chrome carrying the mark"
+             width="1664" height="1110" loading="lazy" decoding="async">
+      </figure>
+    </div>
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <img src="assets/crude/crude-12.jpg" alt="The finished system in use"
+           width="2000" height="1125" loading="lazy" decoding="async">
+    </figure>
   </div>
 
 </main>
 
-<script src="lock.js" defer></script>
-<script src="hero.js" defer></script>
-<script src="case.js" defer></script>
+<script src="js/lock.js?v=202608291318" defer></script>
+<script src="js/hero.js?v=202608291318" defer></script>
+<script src="js/case.js?v=202608291318" defer></script>
 </body>
 </html>

@@ -7,31 +7,31 @@
 
 @font-face {
   font-family: "Space Grotesk";
-  src: url("assets/fonts/SpaceGrotesk-Variable.woff2") format("woff2");
+  src: url("../assets/fonts/SpaceGrotesk-Variable.woff2") format("woff2");
   font-weight: 300 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "Satoshi";
-  src: url("assets/fonts/Satoshi-Regular.woff2") format("woff2");
+  src: url("../assets/fonts/Satoshi-Regular.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Satoshi";
-  src: url("assets/fonts/Satoshi-Medium.woff2") format("woff2");
+  src: url("../assets/fonts/Satoshi-Medium.woff2") format("woff2");
   font-weight: 500; font-style: normal; font-display: swap;
 }
 @font-face {
   font-family: "Satoshi";
-  src: url("assets/fonts/Satoshi-Bold.woff2") format("woff2");
+  src: url("../assets/fonts/Satoshi-Bold.woff2") format("woff2");
   font-weight: 700; font-style: normal; font-display: swap;
 }
 /* Headings only. It has one weight and a bitmap skeleton, so it is never
    asked to set a paragraph and never asked to fake a bold. */
 @font-face {
   font-family: "PP Mondwest";
-  src: url("assets/fonts/PPMondwest-Regular.woff2") format("woff2");
+  src: url("../assets/fonts/PPMondwest-Regular.woff2") format("woff2");
   font-weight: 400; font-style: normal; font-display: swap;
 }
 
@@ -528,10 +528,10 @@ body.menu-open { overflow: hidden; }
     height: 100%;
     z-index: 0;
     display: block;
-    background-image: url("assets/hero-mobile-1242.jpg");
+    background-image: url("../assets/hero-mobile-1242.jpg");
     background-image: image-set(
-      url("assets/hero-mobile-828.jpg") 2x,
-      url("assets/hero-mobile-1242.jpg") 3x);
+      url("../assets/hero-mobile-828.jpg") 2x,
+      url("../assets/hero-mobile-1242.jpg") 3x);
     background-position: center;
     background-size: cover;
     background-repeat: no-repeat;
