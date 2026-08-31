@@ -812,8 +812,16 @@ body.menu-open { overflow: hidden; }
 
 /* The lens is the cursor while you are over the card in front. Hung off
    the deck rather than off `.is-current`, so a frame in which work.js has
-   not marked a card cannot flash the arrow back. */
-.lens-on .deck { cursor: none; }
+   not marked a card cannot flash the arrow back.
+
+   The descendants are named too, and they have to be. A card is an <a>,
+   and the browser's own stylesheet points a hand at every link — a rule
+   sitting directly on the element, which an inherited value never beats.
+   Setting this on the deck alone leaves that hand riding on top of the
+   glass. Naming the subtree puts an author rule on the card itself, and
+   author beats user-agent whatever the specificity says. */
+.lens-on .deck,
+.lens-on .deck * { cursor: none; }
 
 .lens {
   position: absolute;
