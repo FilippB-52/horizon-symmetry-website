@@ -207,6 +207,91 @@
   text-transform: uppercase;
 }
 
+/* ---------- the colour board, in motion ------------------------------- */
+
+/* The same device the Ar/Cut board uses: the palette laid out as plain
+   vertical columns, then the whole board turned counter-clockwise and
+   grown until it overfills the frame. The turn is what steps the labels
+   up the diagonal — they are not placed that way, they are carried there.
+   26.6deg is measured off arcut-04, whose column edges run at dx/dy 0.5.
+
+   Each label sits at the middle of its column, not the foot. On a board
+   this oversized the foot is far below the frame, so the midline is the
+   only place a label stays in view — which is where Ar/Cut puts them.
+
+   The motion is one rule: each colour takes a turn swelling while the
+   rest give way, holds, then hands over to the next. Widths are
+   flex-grow, so the board's total width never changes and every band
+   pays for the swell in proportion. */
+
+.palette {
+  position: relative;
+  container-type: size;
+  background: #1C1814;
+}
+
+.palette__board {
+  /* a 2:1 frame turned 26.6deg needs 112% x 179% to stay covered */
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 112%;
+  height: 182%;
+  transform: translate(-50%, -50%) rotate(-26.6deg);
+  display: flex;
+}
+
+.palette__band {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c);
+  color: var(--t);
+  overflow: hidden;
+  animation: palette-swell 6.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  /* -4 drops every band straight into the steady loop, so the first
+     cycle is not played as a stagger */
+  animation-delay: calc((var(--i) - 4) * 1.6s);
+}
+
+.palette__label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15em;
+}
+
+.palette__hex {
+  font-family: var(--body);
+  font-size: 1.95cqh;
+  letter-spacing: 0.03em;
+  opacity: 0.66;
+  white-space: nowrap;
+}
+
+.palette__name {
+  font-family: "Iowan Old Style", Palatino, "Palatino Linotype", Georgia, serif;
+  font-size: 3.5cqh;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* 0 -> 13.75% is the 0.88s swell, held to 25%, given back by 38.75%.
+   The windows overlap on purpose: one band is still returning while the
+   next is already taking, which is the hand-off Ar/Cut has. */
+@keyframes palette-swell {
+  0%      { flex-grow: 1; }
+  13.75%  { flex-grow: 2.9; }
+  25%     { flex-grow: 2.9; }
+  38.75%  { flex-grow: 1; }
+  100%    { flex-grow: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .palette__band { animation: none; }
+}
+
 /* ---------- rail ----------------------------------------------------- */
 
 .rail {
