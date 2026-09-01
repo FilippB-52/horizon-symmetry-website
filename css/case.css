@@ -283,6 +283,71 @@
   .palette__band { animation: none; }
 }
 
+/* ---------- the Market Pulse issue, setting itself --------------------- */
+
+/* The artwork is never retyped: each line is a window onto crude-06.jpg
+   itself, so the bespoke logotype and the original typesetting survive
+   exactly. A line's box is only as tall as that line, with the jpg sized
+   to the frame behind it and slid up by --p, which keeps eleven cheap
+   layers instead of eleven full-size ones.
+
+   Band edges sit at the midpoint of each gap between lines, measured off
+   the file, so no window can ever clip its neighbour's ascenders.
+
+   The reveal is a soft-edged mask swept across each line: a gradient
+   four times the line's width, transparent at both ends and opaque in
+   the middle. Sweeping it right to left writes the line on, holds it,
+   then carries it off in the same direction it arrived. One property,
+   one pass, no hard edge anywhere. */
+
+.pulse {
+  position: relative;
+  background: #1C1914;
+}
+
+.pulse__line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--t);
+  height: var(--h);
+  background-image: url("../assets/crude/crude-06.jpg");
+  background-size: 100% auto;
+  background-position: 0 var(--p);
+  background-repeat: no-repeat;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0 28%, #000 33% 67%, transparent 72% 100%);
+          mask-image: linear-gradient(90deg, transparent 0 28%, #000 33% 67%, transparent 72% 100%);
+  -webkit-mask-size: 400% 100%;
+          mask-size: 400% 100%;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  /* the resting state is hidden, so a line cannot flash in before its
+     delay has run */
+  -webkit-mask-position: 100% 0;
+          mask-position: 100% 0;
+  animation: pulse-write 9s cubic-bezier(0.4, 0, 0.15, 1) infinite backwards;
+  animation-delay: var(--d);
+}
+
+/* 0.62s on, held to 70%, 0.62s off, then dark until the loop comes back
+   round. 0% and 100% are different mask positions but both read as
+   hidden, so the wrap is invisible. */
+@keyframes pulse-write {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  6.9%   { -webkit-mask-position: 50% 0;  mask-position: 50% 0; }
+  70%    { -webkit-mask-position: 50% 0;  mask-position: 50% 0; }
+  76.9%  { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+  100%   { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pulse__line {
+    animation: none;
+    -webkit-mask-image: none;
+            mask-image: none;
+  }
+}
+
 /* ---------- rail ----------------------------------------------------- */
 
 .rail {
