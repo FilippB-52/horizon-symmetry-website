@@ -297,8 +297,13 @@
    The reveal is a soft-edged mask swept across each line: a gradient
    four times the line's width, transparent at both ends and opaque in
    the middle. Sweeping it right to left writes the line on, holds it,
-   then carries it off in the same direction it arrived. One property,
-   one pass, no hard edge anywhere. */
+   then carries it off the same way it arrived. No hard edge anywhere.
+
+   The stagger lives in each line's own keyframes rather than in an
+   animation-delay, which is what lets the entrance be unhurried while
+   the whole card still clears in one synchronised pass. On a shared
+   delay the exit is forced to repeat the entrance stagger, and the
+   logotype then sits dark for as long as the stagger is wide. */
 
 .pulse {
   position: relative;
@@ -321,23 +326,107 @@
           mask-size: 400% 100%;
   -webkit-mask-repeat: no-repeat;
           mask-repeat: no-repeat;
-  /* the resting state is hidden, so a line cannot flash in before its
-     delay has run */
+  /* the resting state is hidden, so nothing can flash in before its turn */
   -webkit-mask-position: 100% 0;
           mask-position: 100% 0;
-  animation: pulse-write 9s cubic-bezier(0.4, 0, 0.15, 1) infinite backwards;
-  animation-delay: var(--d);
+  animation-duration: 8.5s;
+  animation-timing-function: cubic-bezier(0.45, 0.05, 0.55, 0.95);
+  animation-iteration-count: infinite;
 }
 
-/* 0.62s on, held to 70%, 0.62s off, then dark until the loop comes back
-   round. 0% and 100% are different mask positions but both read as
-   hidden, so the wrap is invisible. */
-@keyframes pulse-write {
+/* 1.05s to write a line on, 0.15s between them, so the last lands at
+   3.9s. Held to 7.15s, then every line clears together, the wipe closing
+   exactly on the loop boundary so the card is never sitting dark for
+   longer than the beat it takes the logotype to start again. 0% and
+   100% are different mask positions but both read as hidden, so the
+   wrap is invisible. */
+.pulse__line:nth-child(1) { animation-name: pulse-w0; }
+.pulse__line:nth-child(2) { animation-name: pulse-w1; }
+.pulse__line:nth-child(3) { animation-name: pulse-w2; }
+.pulse__line:nth-child(4) { animation-name: pulse-w3; }
+.pulse__line:nth-child(5) { animation-name: pulse-w4; }
+.pulse__line:nth-child(6) { animation-name: pulse-w5; }
+.pulse__line:nth-child(7) { animation-name: pulse-w6; }
+.pulse__line:nth-child(8) { animation-name: pulse-w7; }
+.pulse__line:nth-child(9) { animation-name: pulse-w8; }
+.pulse__line:nth-child(10) { animation-name: pulse-w9; }
+.pulse__line:nth-child(11) { animation-name: pulse-w10; }
+
+@keyframes pulse-w0 {
   0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
-  6.9%   { -webkit-mask-position: 50% 0;  mask-position: 50% 0; }
-  70%    { -webkit-mask-position: 50% 0;  mask-position: 50% 0; }
-  76.9%  { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
-  100%   { -webkit-mask-position: 0% 0;   mask-position: 0% 0; }
+  12.353% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w1 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  9.412%  { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  21.765% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w2 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  15.294% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  27.647% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w3 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  21.176% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  33.529% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w4 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  22.941% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  35.294% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w5 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  24.706% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  37.059% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w6 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  26.471% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  38.824% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w7 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  28.235% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  40.588% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w8 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  30.0%   { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  42.353% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w9 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  31.765% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  44.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
+}
+@keyframes pulse-w10 {
+  0%     { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  33.529% { -webkit-mask-position: 100% 0; mask-position: 100% 0; }
+  45.882% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  84.118% { -webkit-mask-position: 50% 0; mask-position: 50% 0; }
+  100%    { -webkit-mask-position: 0% 0; mask-position: 0% 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
