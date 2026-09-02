@@ -793,6 +793,19 @@ body.menu-open { overflow: hidden; }
   display: block;
 }
 
+/* A cover that moves sits over its own still, at the same crop. It is
+   positioned, so it would otherwise paint over the blocks below — it waits
+   for `.is-sharp` alongside the image it covers. */
+.card__motion {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.card:not(.is-sharp) .card__motion { visibility: hidden; }
+
 /* The pixelated stand-in. Its buffer is only as many pixels as the card
    is showing blocks — the browser does the upscale, and `pixelated`
    makes it nearest-neighbour, so the blocks stay hard-edged for free.
@@ -945,6 +958,7 @@ body.menu-open { overflow: hidden; }
      Stated here rather than left to work.js, so it holds either way. */
   .card__px { display: none; }
   .card:not(.is-sharp) img { visibility: visible; }
+  .card:not(.is-sharp) .card__motion { visibility: visible; }
 }
 
 /* ===================================================================
