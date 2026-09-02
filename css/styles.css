@@ -763,7 +763,7 @@ body.menu-open { overflow: hidden; }
    neighbours' rounded edges showing in the space above and below. */
 
 .deck {
-  --lens: clamp(6rem, 7.6vw, 8.5rem);
+  --lens: clamp(4rem, 5.07vw, 5.67rem);
   --card-r: clamp(10px, 0.85vw, 16px);
   position: relative;
   height: 100%;
