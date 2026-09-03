@@ -146,8 +146,17 @@
        the frame is the shape of the picture and nothing is cropped. -->
   <div class="gallery">
     <figure class="shot shot--fit" style="--r: 1.7778">
-      <img class="shot__cover" src="assets/crude/crude-01.jpg" alt="The CRUDE logotype over an oil platform at sunset"
-           width="2000" height="1125" fetchpriority="high" decoding="async">
+      <!-- The plate is a photograph, so the motion in it is only what a
+           long lens would actually catch at this distance: a warning light
+           on the mast, haze drifting across the sky, and the water taking
+           the light back. The still stays as the poster, so the first paint
+           is immediate and nothing waits on the clip. -->
+      <video class="shot__clip shot__cover" width="1920" height="1080"
+             autoplay muted loop playsinline preload="auto"
+             poster="assets/crude/crude-01.jpg"
+             aria-label="The CRUDE logotype over an oil platform at sunset">
+        <source src="assets/crude/crude-01.mp4?v=202609031100" type="video/mp4">
+      </video>
     </figure>
     <div class="pair">
       <figure class="shot shot--fit" style="--r: 0.8978">
