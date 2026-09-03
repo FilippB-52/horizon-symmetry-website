@@ -768,7 +768,14 @@ body.menu-open { overflow: hidden; }
   position: relative;
   height: 100%;
   perspective: 1400px;
-  transform-style: preserve-3d;
+  /* Flat on purpose, and it must stay that way. The perspective above is
+     what draws the depth; the cards are the leaves of it, so preserve-3d
+     added nothing to the picture — the two render pixel for pixel alike.
+     What it did add was a 3D rendering context, and inside one Chrome
+     stops hit-testing a card the moment its own z is anything but zero.
+     Since a card only sits at z 0 when the deck is resting exactly on it,
+     every click landed on .deck instead and the cover opened nothing. */
+  transform-style: flat;
 }
 
 .card {
