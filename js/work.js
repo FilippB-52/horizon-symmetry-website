@@ -89,6 +89,20 @@
   var CURVE  = 1.7;     // >1 holds the blocks on screen; see pxResolve
   var EDGE   = 0.58;    // how far past a boundary before it counts as a switch
 
+  /* Two behaviours are switched off here rather than cut out, so either
+     comes back by flipping one word.
+
+     SNAP true is the deck that only ever rests on a whole card: scroll
+     chose which one, and getting there was a fixed animation. It reads as
+     deliberate and it is also what made a small gesture cost a whole
+     project, with nowhere to stand in between. False lets scroll carry
+     the deck directly and leaves GLIDE as the only weight in it.
+
+     BLOCKS true is the coarse pixel reveal every cover waited behind. */
+  var SNAP   = false;
+  var BLOCKS = false;
+  var GLIDE  = 0.16;    // share of the distance closed per frame, SNAP off
+
   var TEXT_SPAN = 560;  // ms the copy cascade takes
   var ROLLS     = 2;    // scrambled glyphs each character rolls through
   var EASE_OUT  = "cubic-bezier(0.215, 0.61, 0.355, 1)";   // power3.out
@@ -421,7 +435,8 @@
       el.classList.toggle("is-current", front);
       // a card that loses the front mid-resolve goes straight back to
       // blocks, rather than finishing its reveal on the way out
-      if (!front && (el.classList.contains("is-sharp") || (el.__px && el.__px.raf))) {
+      if (BLOCKS && !front &&
+          (el.classList.contains("is-sharp") || (el.__px && el.__px.raf))) {
         pxCoarse(el);
       }
     }
@@ -455,9 +470,27 @@
 
     if (wanted !== from) {
       start(wanted);                      // scroll moved on while we ran
-    } else if (armed) {
+    } else if (armed && BLOCKS) {
       pxResolve(cards[to]);               // arrived, and staying: resolve it
     }
+  }
+
+  /* With SNAP off the deck is not driven to a card at all: scroll says
+     where it should be as a float, and each frame closes GLIDE of what is
+     left. It can therefore rest anywhere, two covers included, and a small
+     gesture moves it a small amount instead of spending a whole project. */
+  function glide() {
+    raf = 0;
+    var target = readScroll();
+    var d = target - u;
+    if (Math.abs(d) < 0.001) {
+      u = target;
+      try { layout(); } catch (e) { /* a bad frame must not kill the loop */ }
+      return;
+    }
+    u += d * GLIDE;
+    try { layout(); } catch (e) { /* noop */ }
+    raf = requestAnimationFrame(glide);
   }
 
   /* One card per move, never more.
@@ -500,6 +533,7 @@
 
   function onScroll() {
     if (gallery) { spyLater(); return; }
+    if (!SNAP) { if (!raf) raf = requestAnimationFrame(glide); return; }
     var next = pick(readScroll());
     if (next !== wanted) {
       wanted = next;
@@ -530,15 +564,21 @@
       armed = true;
     }
   } else {
-    cards.forEach(pxInit);
-    cards.forEach(function (el) {
-      var st = el.__px;
-      if (!st) return;
-      if (st.img.complete && st.img.naturalWidth) pxCoarse(el);
-      else st.img.addEventListener("load", function () { pxCoarse(el); }, { once: true });
-    });
+    if (BLOCKS) {
+      cards.forEach(pxInit);
+      cards.forEach(function (el) {
+        var st = el.__px;
+        if (!st) return;
+        if (st.img.complete && st.img.naturalWidth) pxCoarse(el);
+        else st.img.addEventListener("load", function () { pxCoarse(el); }, { once: true });
+      });
+    } else {
+      // nothing is waiting behind blocks, so every cover is simply itself —
+      // and .is-sharp is what the stylesheet gates the covers on
+      cards.forEach(function (el) { el.classList.add("is-sharp"); });
+    }
 
-    u = from = to = wanted = Math.round(readScroll());
+    u = from = to = wanted = SNAP ? Math.round(readScroll()) : readScroll();
     layout();
 
     // the front card's copy rolls in when the stage arrives, not on load
@@ -548,7 +588,7 @@
         io.disconnect();
         armed = true;
         shuffleIn(shown < 0 ? 0 : shown);
-        if (from === to) pxResolve(cards[from]);
+        if (BLOCKS && from === to) pxResolve(cards[from]);
       }, { threshold: 0.5 });
       io.observe(stage);
     }
@@ -567,10 +607,14 @@
       return;
     }
 
-    cards.forEach(function (el) {
-      if (el.__px && !el.classList.contains("is-sharp")) pxDraw(el.__px, el.__px.cols || COLS);
-    });
-    if (was) { u = from = to = wanted = Math.round(readScroll()); }
+    if (BLOCKS) {
+      cards.forEach(function (el) {
+        if (el.__px && !el.classList.contains("is-sharp")) pxDraw(el.__px, el.__px.cols || COLS);
+      });
+    } else {
+      cards.forEach(function (el) { el.classList.add("is-sharp"); });
+    }
+    if (was) { u = from = to = wanted = SNAP ? Math.round(readScroll()) : readScroll(); }
     onScroll();
     layout();
   });
