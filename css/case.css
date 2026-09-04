@@ -725,50 +725,19 @@
   .shot--half { height: 54svh; }
   .shot--wide { height: 38svh; }
 
-  /* Stacked full width, a frame's own shape decides how much of the phone
-     it takes, and both ends of that are wrong. A 16:9 lands at 25svh and
-     reads as a thumbnail — worst on the site recordings, where the browser
-     window is centred in wide margin and ends up unreadable. A portrait
-     frame that is only a detail because a desktop pair splits the width
-     lands at 59svh, full bleed, as the largest thing on the page.
+  /* The composition is the layout, at every width. A pair stays a pair on
+     a phone: .shot--fit already carries the picture's own ratio, and in a
+     pair its flex-grow is that same number, so two frames of any two
+     shapes land on one shared height and fill the line exactly. Smaller,
+     but a composition, and nothing is ever cropped to make it fit.
 
-     The two ends want opposite treatment. Wide media has margin to spare,
-     so it crops to 1.25 and gains half its height again. Tall media has
-     none — these are posters and launch creatives, where a crop cuts the
-     message — so it keeps every pixel and is held to 52svh by narrowing
-     instead, the width following from the height and the frame centred.
-     max-width does that arithmetic: height x ratio is the width that
-     lands the frame exactly on the cap. */
-  .shot.shot--fit {
-    height: auto;
-    /* stated, because margin-inline: auto turns off the flex stretch that
-       was setting the width — the drawn panels have no intrinsic width of
-       their own and collapsed to nothing without it */
-    width: 100%;
-    aspect-ratio: min(var(--r), 1.25);
-    max-width: calc(52svh * min(var(--r), 1.25));
-    margin-inline: auto;
-  }
+     Stacking them full width was the mistake. It turned every frame into
+     a full-bleed hero, which forced a crop to keep the page in any kind
+     of rhythm, and a crop takes the sides off a poster and the ends off
+     the palette. Read as a column of unrelated pictures rather than a
+     piece of work laid out. */
 
-  /* The opener crops, but only to 1.5. It is the establishing shot and
-     its width is the point, so it gives up less than the rest. */
-  .gallery > .shot:first-child {
-    aspect-ratio: min(var(--r), 1.5);
-    max-width: none;
-  }
 
-  /* The drawn panels keep their own shape outright. They are built to
-     their box rather than shot in it, and cropping the palette takes the
-     ends off Shadow Black and Aztec Gold, which is information. */
-  .shot.palette,
-  .shot.pulse { aspect-ratio: var(--r); max-width: none; }
-
-  .pair,
-  .row { flex-direction: column; }
-  /* the pair stacks here, so flex-basis would size the height, not the
-     width, and a basis of 0 would flatten the frame — hand it back */
-  .pair .shot.shot--fit,
-  .row .shot.shot--fit { flex: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

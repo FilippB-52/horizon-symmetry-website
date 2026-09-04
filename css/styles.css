@@ -944,7 +944,10 @@ body.menu-open { overflow: hidden; }
        why this only ever showed on a phone. */
     transform-style: flat;
     display: grid;
-    gap: clamp(1.25rem, 3.5vh, 2rem);
+    /* Wider than it was. The covers are meant to read as separate things
+       set back from one another, and at the old gap they crowded into one
+       another instead. */
+    gap: clamp(2.25rem, 7vh, 4rem);
     margin-inline: calc(0.9rem - var(--gutter));
     padding-top: clamp(1rem, 3vh, 1.75rem);
   }

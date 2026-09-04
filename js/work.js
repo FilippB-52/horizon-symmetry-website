@@ -70,6 +70,28 @@
       if (cards[k].getBoundingClientRect().top <= line) i = k;
     }
     setCopy(i);
+    depth();
+  }
+
+  /* The covers are a column here rather than a deck, but the deck's read
+     still holds: the one you are on is the subject, and the ones either
+     side of it sit back. Distance from the middle of the screen is what
+     drives it, so a cover fades down as it leaves and the next comes up
+     as it arrives, continuously with the scroll instead of snapping at
+     some threshold. FLOOR is deliberately high — set back, not dimmed
+     out, or the column stops reading as one piece of work. */
+  var FLOOR = 0.46;   // a cover a full screen away from the middle
+  var REACH = 0.62;   // screens from the middle at which it gets there
+
+  function depth() {
+    if (!gallery) return;
+    var h = window.innerHeight;
+    for (var k = 0; k < N; k++) {
+      var r = cards[k].getBoundingClientRect();
+      var d = Math.abs((r.top + r.bottom) / 2 - h / 2) / h;
+      var o = 1 - Math.min(1, d / REACH) * (1 - FLOOR);
+      cards[k].style.opacity = o.toFixed(3);
+    }
   }
 
   function spyLater() {
@@ -603,7 +625,7 @@
 
     if (gallery) {
       if (!was) releaseCards();           // hand the covers back to the stylesheet
-      spy();
+      spy();                              // which sets the copy and the depth
       return;
     }
 
