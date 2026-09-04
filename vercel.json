@@ -1,4 +1,28 @@
 {
   "cleanUrls": true,
-  "trailingSlash": false
+  "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "horizon-symmetry-website.vercel.app"
+        }
+      ],
+      "destination": "https://horizonsymmetry.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.horizonsymmetry.com"
+        }
+      ],
+      "destination": "https://horizonsymmetry.com/:path*",
+      "permanent": true
+    }
+  ]
 }
