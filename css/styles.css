@@ -67,7 +67,11 @@ html {
   -webkit-text-size-adjust: 100%;
   overflow-x: clip;
   overscroll-behavior-x: none;
-  touch-action: manipulation;
+  /* pan-x pan-y is every gesture except the pinch, refused declaratively.
+     manipulation still allowed the pinch, which is why lock.js was holding
+     a non-passive touchmove to refuse it by hand, and that listener was
+     what took iOS off its threaded scroller. */
+  touch-action: pan-x pan-y;
 }
 
 body {

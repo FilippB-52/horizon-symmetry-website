@@ -650,15 +650,17 @@
    the rail beside it. The frames run edge to edge on a 10px gap, which is
    far too tight for type — this is the one block in the column that pads
    itself back in, and a hairline above it separates the ask from the work. */
+/* Centred, and with no rule above it. The line was doing the job the
+   space already does, and it cut the ask off from the work instead of
+   letting it follow from it. */
 .case-cta {
-  margin-top: clamp(2rem, 7vh, 5rem);
-  padding: clamp(2.5rem, 8vh, 5rem) clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 3vh, 2rem);
-  border-top: 1px solid var(--rule);
+  margin-top: clamp(1.25rem, 4vh, 2.5rem);
+  padding: clamp(2rem, 6vh, 3.75rem) clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 3vh, 2rem);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
-  gap: clamp(1.5rem, 4vw, 3rem);
+  text-align: center;
+  gap: clamp(1.5rem, 4vw, 2.25rem);
 }
 
 .case-cta h2 {
@@ -717,8 +719,6 @@
   .case-cta {
     padding-left: var(--gutter);
     padding-right: var(--gutter);
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .shot,

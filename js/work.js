@@ -80,8 +80,13 @@
      as it arrives, continuously with the scroll instead of snapping at
      some threshold. FLOOR is deliberately high — set back, not dimmed
      out, or the column stops reading as one piece of work. */
-  var FLOOR = 0.46;   // a cover a full screen away from the middle
-  var REACH = 0.62;   // screens from the middle at which it gets there
+  var FLOOR = 0.40;   // a cover far from the middle
+  var REACH = 0.49;   // screens from the middle at which it gets there
+
+  /* The next cover sits about a third of a screen down from the one you
+     are on, so REACH is what actually decides how bright it is: at 0.62 it
+     came out around 0.65 and still read as lit. At 0.49 the same cover
+     lands near 0.55, which is clearly behind without going dark. */
 
   function depth() {
     if (!gallery) return;
