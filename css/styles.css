@@ -963,7 +963,11 @@ body.menu-open { overflow: hidden; }
     position: relative;
     width: auto;
     height: auto;
-    aspect-ratio: 4 / 3;
+    /* The covers are 1600x1000. Held at 4/3 they lost 17% of their width
+       to the crop, which is what made them read as blown up, and at 301px
+       they ate a third of the screen each. Given the shape they actually
+       are, nothing is cut and the whole cover is 50px shorter. */
+    aspect-ratio: 16 / 10;
     opacity: 1;
     pointer-events: auto;
     will-change: auto;
