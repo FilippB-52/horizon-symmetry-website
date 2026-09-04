@@ -61,16 +61,48 @@
      sitting across the line cannot flicker the copy between two. */
   var spyRaf = 0;
 
+  /* Nothing here is measured while the finger is down. A cover does not
+     move in the document as you scroll, only the window does, so its
+     position is taken once and the scroll offset does the rest. Measuring
+     per frame was asking the browser to lay the page out again on every
+     one, and the copy panel is sticky, so its edge was being read back
+     mid-scroll too. Both are now arithmetic on scrollY.
+
+     geo is dropped whenever the page could have moved under us, and taken
+     again on the next frame that needs it. */
+  var geo = null;
+
+  function measure() {
+    var sy = window.scrollY;
+    var h  = window.innerHeight;
+    var under = copy ? copy.getBoundingClientRect().bottom : 0;
+    var g = { h: h, line: under + (h - under) * 0.5, tops: [], mids: [] };
+    for (var k = 0; k < N; k++) {
+      var r = cards[k].getBoundingClientRect();
+      g.tops[k] = r.top + sy;
+      g.mids[k] = r.top + sy + r.height / 2;
+    }
+    geo = g;
+  }
+
   function spy() {
     spyRaf = 0;
-    var under = copy ? copy.getBoundingClientRect().bottom : 0;
-    var line = under + (window.innerHeight - under) * 0.5;
+    if (!geo) measure();
+
+    var sy  = window.scrollY;
+    var h   = geo.h;
+    var mid = sy + h / 2;
     var i = 0;
+
     for (var k = 0; k < N; k++) {
-      if (cards[k].getBoundingClientRect().top <= line) i = k;
+      if (geo.tops[k] - sy <= geo.line) i = k;
+      if (gallery) {
+        var d = Math.abs(geo.mids[k] - mid) / h;
+        var o = 1 - Math.min(1, d / REACH) * (1 - FLOOR);
+        cards[k].style.opacity = o.toFixed(3);
+      }
     }
     setCopy(i);
-    depth();
   }
 
   /* The covers are a column here rather than a deck, but the deck's read
@@ -80,7 +112,7 @@
      as it arrives, continuously with the scroll instead of snapping at
      some threshold. FLOOR is deliberately high — set back, not dimmed
      out, or the column stops reading as one piece of work. */
-  var FLOOR = 0.40;   // a cover far from the middle
+  var FLOOR = 0.20;   // a cover far from the middle
   var REACH = 0.49;   // screens from the middle at which it gets there
 
   /* The next cover sits about a third of a screen down from the one you
@@ -88,16 +120,7 @@
      came out around 0.65 and still read as lit. At 0.49 the same cover
      lands near 0.55, which is clearly behind without going dark. */
 
-  function depth() {
-    if (!gallery) return;
-    var h = window.innerHeight;
-    for (var k = 0; k < N; k++) {
-      var r = cards[k].getBoundingClientRect();
-      var d = Math.abs((r.top + r.bottom) / 2 - h / 2) / h;
-      var o = 1 - Math.min(1, d / REACH) * (1 - FLOOR);
-      cards[k].style.opacity = o.toFixed(3);
-    }
-  }
+
 
   function spyLater() {
     if (!spyRaf) spyRaf = requestAnimationFrame(spy);
@@ -309,8 +332,15 @@
       if (!gallery) {
         if (i === wanted) shuffleIn(i);
       } else {
+        /* 60ms was short enough that a flick still paid for a roll at
+           every cover it passed, and a roll measures the width of every
+           character in the paragraph one at a time. Three covers each way
+           was the single most expensive thing on the page while the
+           finger was moving. Long enough now that only a scroll which has
+           actually come to rest gets the animation; the copy itself still
+           swaps immediately, so nothing waits to be readable. */
         clearTimeout(settle);
-        settle = setTimeout(function () { if (shown === i) shuffleIn(i); }, 60);
+        settle = setTimeout(function () { if (shown === i) shuffleIn(i); }, 180);
       }
     }
     if (prev >= 0 && prev !== i) {
@@ -622,7 +652,21 @@
   }
 
   addEventListener("scroll", onScroll, { passive: true });
+
+  /* Late arrivals move the covers: a font swapping in above them, a cover
+     that had no dimensions until it decoded. Each one invalidates the
+     measurement rather than correcting it, so the next frame takes it
+     again from a settled page. */
+  function remeasure() {
+    geo = null;
+    if (gallery) spyLater();   // the deck has its own path and must not be poked
+  }
+  addEventListener("load", remeasure);
+  addEventListener("orientationchange", remeasure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(remeasure);
+
   addEventListener("resize", function () {
+    geo = null;
     var was = gallery;
     gallery = isGallery();                // the breakpoint may have changed
 
@@ -630,6 +674,7 @@
 
     if (gallery) {
       if (!was) releaseCards();           // hand the covers back to the stylesheet
+      geo = null;                         // the covers have just been re-laid out
       spy();                              // which sets the copy and the depth
       return;
     }
