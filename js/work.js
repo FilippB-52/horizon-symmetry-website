@@ -93,6 +93,7 @@
     var h   = geo.h;
     var mid = sy + h / 2;
     var i = 0;
+    var near = 0, nearD = Infinity;
 
     for (var k = 0; k < N; k++) {
       if (geo.tops[k] - sy <= geo.line) i = k;
@@ -100,9 +101,43 @@
         var d = Math.abs(geo.mids[k] - mid) / h;
         var o = 1 - Math.min(1, d / REACH) * (1 - FLOOR);
         cards[k].style.opacity = o.toFixed(3);
+        if (d < nearD) { nearD = d; near = k; }
       }
     }
+
+    if (gallery) onlyPlay(nearD < 0.75 ? near : -1);
     setCopy(i);
+  }
+
+  /* Only the cover you are on is playing.
+
+     This is what was left of the scroll fighting the finger, and it was
+     the only thing left: with the clips paused the same reversal holds a
+     flat 16.7ms and drops nothing, while the copy, the sticky panel and
+     the opacity pass each made no measurable difference at all. Three
+     clips decoding at once is simply more than a phone will do alongside
+     a scroll, and a reversal is where it shows, because that is where the
+     covers are moving fastest and the decoder is furthest behind.
+
+     Nothing is lost: a cover set back at a fifth opacity is not something
+     you are watching, and it starts again the moment it becomes the one
+     you are on. Only the change is acted on, never the frame. */
+  var playing = -2;
+
+  function onlyPlay(k) {
+    if (k === playing) return;
+    playing = k;
+    for (var j = 0; j < N; j++) {
+      var v = cards[j].querySelector("video");
+      if (!v) continue;
+      if (j === k) {
+        v.muted = true;                     // Safari reads the property
+        var go = v.play();
+        if (go && go.catch) go.catch(function () {});
+      } else if (!v.paused) {
+        v.pause();
+      }
+    }
   }
 
   /* The covers are a column here rather than a deck, but the deck's read
@@ -657,6 +692,13 @@
      that had no dimensions until it decoded. Each one invalidates the
      measurement rather than correcting it, so the next frame takes it
      again from a settled page. */
+  /* A hidden tab keeps decoding otherwise, and coming back to a page that
+     never stopped is the same cost paid for nothing. */
+  document.addEventListener("visibilitychange", function () {
+    if (!gallery) return;
+    if (document.hidden) onlyPlay(-1); else spyLater();
+  });
+
   function remeasure() {
     geo = null;
     if (gallery) spyLater();   // the deck has its own path and must not be poked
