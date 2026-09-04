@@ -3,6 +3,17 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "horizon-symmetry-website.vercel.app"
+        }
+      ],
+      "destination": "https://horizonsymmetry.com/",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
@@ -11,6 +22,17 @@
         }
       ],
       "destination": "https://horizonsymmetry.com/:path*",
+      "permanent": true
+    },
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.horizonsymmetry.com"
+        }
+      ],
+      "destination": "https://horizonsymmetry.com/",
       "permanent": true
     },
     {
