@@ -949,9 +949,18 @@ body.menu-open { overflow: hidden; }
     padding-top: clamp(1rem, 3vh, 1.75rem);
   }
 
-  /* In the flow, at the shape the case page opens into. */
+  /* In the flow, at the shape the case page opens into.
+
+     Relative, not static: .card__motion is absolute and insets to 0, so
+     the card has to stay its containing block. Left static, the clip
+     resolved against an ancestor instead — every cover's video escaped
+     to the full width and height of the deck, sat over the covers above
+     and below it, and took the taps meant for them. Only Ar/Cut and
+     KOMNATA showed it, because they are the ones with a clip either
+     side. In a grid cell relative and static lay out identically, so
+     this costs nothing. */
   .card {
-    position: static;
+    position: relative;
     width: auto;
     height: auto;
     aspect-ratio: 4 / 3;

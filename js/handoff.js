@@ -169,7 +169,7 @@
 
   /* --- closing --------------------------------------------------------- */
 
-  function close() {
+  function close(hash) {
     if (!view) return;
     view.remove();
     view = null;
@@ -186,7 +186,13 @@
 
     document.title = title;
     if (window.CaseView) window.CaseView.init(null);   // drop its listeners
-    scrollTo(0, back);
+
+    /* Home puts the landing page back exactly where it was left, which is
+       the whole point of opening in place. But a link that names a section
+       asked to be taken there, and that request outranks the restore —
+       otherwise Contact set the hash and left the reader at the deck. */
+    var mark = hash && document.getElementById(hash.slice(1));
+    scrollTo(0, mark ? mark.getBoundingClientRect().top + window.scrollY : back);
     busy = false;
 
     /* The hero was out of layout for as long as the case was open, which
@@ -240,7 +246,7 @@
     if (!file || file === "index.html") {
       e.preventDefault();
       history.pushState({}, "", to.pathname + to.hash);
-      close();
+      close(to.hash);
       return;
     }
 
