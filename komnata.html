@@ -166,10 +166,10 @@
     <div class="pair">
       <figure class="shot shot--fit" style="--r: 0.8824">
         <video class="shot__clip" width="2160" height="2448"
-               autoplay muted loop playsinline preload="auto"
+               muted loop playsinline preload="none"
                poster="assets/komnata/komnata-02.jpg"
                aria-label="The colour system: Night, Raised, Bone, Cyan and Cyan deep, with contrast ratios">
-          <source src="assets/komnata/komnata-02.mp4?v=202609031930" type="video/mp4">
+          <source src="assets/komnata/komnata-02.mp4?v=202609061930" type="video/mp4">
         </video>
       </figure>
       <figure class="shot shot--fit" style="--r: 1.1016">
@@ -195,6 +195,17 @@
              width="820" height="1094" loading="lazy" decoding="async">
       </figure>
     </div>
+    <!-- The campaign film, full width at the poster series' own 16:9. The
+         posters above it are the still half of the launch and this is the
+         moving half, so it follows them rather than opening a new idea. -->
+    <figure class="shot shot--fit" style="--r: 1.7778">
+      <video class="shot__clip" width="1920" height="1080"
+             muted loop playsinline preload="none"
+             poster="assets/komnata/komnata-08.jpg"
+             aria-label="The New Year's Party film on a laptop: a walk across Madrid, closing on the bill for Shoko">
+        <source src="assets/komnata/komnata-08.mp4?v=202609061930" type="video/mp4">
+      </video>
+    </figure>
     <div class="pair">
       <figure class="shot shot--fit" style="--r: 0.8">
         <img src="assets/komnata/komnata-09.jpg" alt="The Broadcast Night bill, on air from Opium Madrid"
@@ -205,18 +216,35 @@
              width="1248" height="1560" loading="lazy" decoding="async">
       </figure>
     </div>
+    <!-- 11 comes out of its pair and takes the full width. The repeat is a
+         texture rather than a subject, so it holds up wide, and leaving the
+         pair frees 12 to stand beside 13: the page you open at the door,
+         and the night it turned into. Two phones, one still, one playing.
+
+         13 is square, and a square at the full width of this column would
+         come out taller than the screen. Paired, it is the wider of the
+         two frames and both land on one height: .pair gives every frame a
+         flex-grow of its own ratio, which is what keeps a mixed row level. -->
+    <figure class="shot shot--fit" style="--r: 1.5833">
+      <video class="shot__clip" width="1596" height="1008"
+             muted loop playsinline preload="none"
+             poster="assets/komnata/komnata-11.jpg"
+             aria-label="The mark as a repeat, cyan on black, drifting">
+        <source src="assets/komnata/komnata-11.mp4?v=202609061930" type="video/mp4">
+      </video>
+    </figure>
     <div class="pair">
-      <figure class="shot shot--fit" style="--r: 1.5833">
-        <video class="shot__clip" width="1596" height="1008"
-               autoplay muted loop playsinline preload="auto"
-               poster="assets/komnata/komnata-11.jpg"
-               aria-label="The mark as a repeat, cyan on black, drifting">
-          <source src="assets/komnata/komnata-11.mp4?v=202609031930" type="video/mp4">
-        </video>
-      </figure>
       <figure class="shot shot--fit" style="--r: 0.7546">
         <img src="assets/komnata/komnata-12.jpg" alt="The night's page open on a phone at the door"
              width="1070" height="1418" loading="lazy" decoding="async">
+      </figure>
+      <figure class="shot shot--fit" style="--r: 1.0">
+        <video class="shot__clip" width="1080" height="1080"
+               muted loop playsinline preload="none"
+               poster="assets/komnata/komnata-13.jpg"
+               aria-label="The night cut for the feed: the floor, the booth and the crowd, closing on the mark">
+          <source src="assets/komnata/komnata-13.mp4?v=202609061930" type="video/mp4">
+        </video>
       </figure>
     </div>
     <figure class="shot shot--fit" style="--r: 1.7778">
@@ -263,6 +291,6 @@
 
 <script src="js/lock.js?v=202609060900" defer></script>
 <script src="js/hero.js?v=202608291318" defer></script>
-<script src="js/case.js?v=202608291318" defer></script>
+<script src="js/case.js?v=202609061945" defer></script>
 </body>
 </html>

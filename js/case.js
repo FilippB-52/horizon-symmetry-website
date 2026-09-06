@@ -100,17 +100,74 @@ window.CaseView = (function () {
   addEventListener("scroll", onScroll, { passive: true });
   addEventListener("resize", sync);
 
-  /* The clips autoplay from their own attributes. A muted, inline, looping
-     video is allowed to start on its own in every current browser, and the
-     markup says so, so there is nothing to drive from here — the one job
-     left is to nudge any element a page-in-place open left paused. */
-  var clips = Array.prototype.slice.call(root.querySelectorAll(".shot__clip"));
+  /* Only the clip you are looking at plays, and nothing below the fold is
+     fetched until you are nearly on it.
 
-  clips.forEach(function (v) {
+     KOMNATA is what forced this. That page carries five clips, one of them
+     a minute long, and every one of them used to start at once: five
+     decoders running against the scroll and five downloads competing for
+     one connection, most of it spent on frames nobody had reached yet. The
+     landing deck settled the same question in work.js, and the answer here
+     is the same one.
+
+     The split is written in the markup rather than here. The cover at the
+     top of a case page keeps its autoplay attribute, so the page still
+     opens on motion without waiting for an observer to say so. Every clip
+     below it carries preload="none" and no autoplay, so it costs nothing
+     at all until play() is called, and that call is what pulls the first
+     bytes. */
+  var clips = Array.prototype.slice.call(root.querySelectorAll(".shot__clip"));
+  var clipWatch = null;
+
+  function start(v) {
     v.muted = true;                 // Safari reads the property, not the attribute
     var go = v.play();
     if (go && go.catch) go.catch(function () {});
-  });
+  }
+
+  var eager = clips.filter(function (v) { return v.hasAttribute("autoplay"); });
+  var lazy  = clips.filter(function (v) { return !v.hasAttribute("autoplay"); });
+
+  clips.forEach(function (v) { v.muted = true; });
+  eager.forEach(start);
+
+  if (lazy.length && window.IntersectionObserver) {
+    /* Half a screen of lead either side. A clip is already running by the
+       time it is under the eye rather than starting there, and it is not
+       dropped the instant it leaves, so a short scroll back and forth
+       across a boundary cannot stutter it. A faststart file begins on the
+       first buffered frames, so half a screen is enough of a head start
+       without pulling four clips at once. */
+    clipWatch = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        e.target.__near = e.isIntersecting;
+        if (e.isIntersecting) start(e.target);
+        else if (!e.target.paused) e.target.pause();
+      });
+    }, { rootMargin: "50% 0px 50% 0px" });
+
+    /* The cover is watched too. It is started above without waiting for
+       anything, so the page always opens on motion, but there is no reason
+       for it to keep decoding once it is a screen behind you. Observing it
+       only adds the pause; start() on a clip already running does nothing. */
+    clips.forEach(function (v) { clipWatch.observe(v); });
+  } else {
+    lazy.forEach(start);            // no observer to ask, so play them all
+  }
+
+  /* A hidden tab keeps decoding otherwise, and coming back to a page that
+     never stopped is the same cost paid for nothing. The observer cannot
+     restart them on the way back, because intersection has not changed
+     while the tab was away, so the clips that were near say so themselves. */
+  function onVisibility() {
+    if (document.hidden) {
+      clips.forEach(function (v) { v.pause(); });
+    } else {
+      eager.forEach(start);
+      lazy.forEach(function (v) { if (v.__near) start(v); });
+    }
+  }
+  document.addEventListener("visibilitychange", onVisibility);
 
   live = {
     stop: function () {
@@ -118,6 +175,8 @@ window.CaseView = (function () {
       removeEventListener("resize", sync);
       cancelAnimationFrame(raf);
       if (watch) watch.disconnect();
+      if (clipWatch) clipWatch.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
       clips.forEach(function (v) { v.pause(); });
       live = null;
     }
