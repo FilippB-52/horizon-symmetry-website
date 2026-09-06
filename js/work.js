@@ -51,6 +51,9 @@
     cards.forEach(function (el) {
       el.style.cssText = "";
       el.classList.remove("is-current");
+      // the stylesheet is laying these out as a plain column now, so every
+      // cover is a normal link again and takes the keyboard like one
+      el.removeAttribute("tabindex");
       el.classList.add("is-sharp");     // the photograph, not the blocks
     });
   }
@@ -510,6 +513,10 @@
 
       if (a > VANISH) {
         if (el.style.visibility !== "hidden") el.style.visibility = "hidden";
+        // hidden already takes it out of the tab order, but this branch
+        // returns before the tabIndex below, so say it here too rather
+        // than leave the card's reachability resting on two mechanisms
+        el.tabIndex = -1;
         continue;
       }
       el.style.visibility = "visible";
@@ -525,6 +532,15 @@
       el.style.zIndex = String(100 - Math.round(a * 20));
       var front = a < 0.5;
       el.classList.toggle("is-current", front);
+
+      /* Only the card in front takes the pointer, so only the card in
+         front should take the keyboard. Without this, Tab walks through
+         three covers of which two are set back in depth, dimmed, and
+         refusing clicks: a keyboard user gets sent to a case study they
+         cannot see they are on. Scroll is what picks the card, exactly
+         as it does for the mouse, and each one becomes reachable as it
+         arrives. */
+      el.tabIndex = front ? 0 : -1;
       // a card that loses the front mid-resolve goes straight back to
       // blocks, rather than finishing its reveal on the way out
       if (BLOCKS && !front &&

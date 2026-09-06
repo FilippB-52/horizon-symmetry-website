@@ -23,8 +23,8 @@
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/styles.css?v=202609060900">
-<link rel="stylesheet" href="css/case.css?v=202609060900">
+<link rel="stylesheet" href="css/styles.css?v=202609061830">
+<link rel="stylesheet" href="css/case.css?v=202609061830">
 </head>
 
 <body class="case" style="--accent: #B9A98C">
@@ -39,7 +39,13 @@
     <a href="index.html#work" aria-current="page">Work</a>
     <a href="index.html#contact">Contact</a>
   </nav>
-  <a class="bar__end" href="https://apply.horizonsymmetry.com">
+  <!-- The label is the only text in this link and the stylesheet hides it
+       below the phone breakpoint, which left the primary call to action
+       with no accessible name at all on a phone: a screen reader read out
+       "link" and stopped. aria-label carries the same words at every
+       width, and matches the visible text where the visible text is
+       showing. -->
+  <a class="bar__end" href="https://apply.horizonsymmetry.com" aria-label="Get in touch">
     <span>Get in touch</span>
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -179,7 +185,11 @@
             <span class="palette__name">Shadow Black</span>
           </span>
         </div>
-        <div class="palette__band" style="--i: 1; --c: #8A7D6B; --t: #1C1814">
+        <!-- Every other band writes in the palette's own Shadow Black. On
+             Almond Frost that lands at 4.39:1, just under AA, so this one
+             band drops to a slightly deeper black. The swatch itself is
+             untouched: it is CRUDE's colour and has to stay exact. -->
+        <div class="palette__band" style="--i: 1; --c: #8A7D6B; --t: #14110E">
           <span class="palette__label">
             <span class="palette__hex">#8A7D6B</span>
             <span class="palette__name">Almond Frost</span>
@@ -268,6 +278,23 @@
         </span>
       </a>
     </section>
+
+    <!-- The company behind the site, reachable from every page rather than
+         only from the landing page's footer. Article 10 of the LSSI asks
+         for permanent and direct access, and a case page is where a lot of
+         people arrive first. -->
+    <footer class="case-legal">
+      <p>
+        Horizon Symmetry is a trading name of Zencup, S.L. · CIF B22569602 ·
+        Calle de Lagasca 63, 4A, 28001 Madrid, Spain
+      </p>
+      <nav aria-label="Legal">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="cookies.html">Cookies</a>
+        <span>&copy; 2026 Zencup, S.L.</span>
+      </nav>
+    </footer>
 
   </div>
 

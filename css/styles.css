@@ -39,7 +39,11 @@
   --void:       #000000;
   --ink:        #FFFFFF;
   --ink-dim:    #B9B2C6;
-  --ink-faint:  #6E6879;
+  /* Was #6E6879, which came out at 3.92:1 on black and failed WCAG AA for
+     the small text it carries: the menu's footer links, the project service
+     line, the footer column labels. #8A8495 is the same colour lifted to
+     5.82:1, which passes AA for any size. */
+  --ink-faint:  #8A8495;
   --rule:       rgba(255, 255, 255, 0.15);
   --violet:     #9B3BE0;
   --violet-hot: #E6C4FA;
@@ -104,6 +108,27 @@ body {
   border-radius: 0 0 0.5rem 0;
 }
 .skip-link:focus { left: 0; }
+
+/* Every interactive thing gets a visible ring when it is reached by
+   keyboard. The named components below set their own and outrank this by
+   specificity; this is the floor, so a link nobody styled is still
+   findable. `:focus-visible` rather than `:focus`, so a mouse click never
+   draws it. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--violet-hot);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* The skip link and the document targets it jumps to. A div is not
+   focusable on its own, so the jump moves the viewport without moving
+   focus, and the next Tab returns to the top of the page. tabindex="-1"
+   in the markup makes the target focusable by script and by fragment
+   only; this stops it drawing a ring when it is landed on that way. */
+[tabindex="-1"]:focus { outline: none; }
 
 /* ---------- masthead ---------------------------------------------- */
 
@@ -1223,6 +1248,50 @@ body.menu-open { overflow: hidden; }
   transition: color 0.3s var(--ease);
 }
 .contact__links a:hover { color: var(--ink); }
+
+/* ---------- the legal strip ------------------------------------------ */
+
+/* Sits between the link columns and the mark, on its own rule. Quiet, but
+   not dim: --ink-faint carries it, which is 5.8:1 on black. */
+.contact__legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem clamp(1rem, 3vw, 2.5rem);
+  margin: 0 var(--gutter);
+  padding: clamp(1rem, 2.5vh, 1.5rem) 0 clamp(1.25rem, 3vh, 2rem);
+  border-top: 1px solid var(--rule);
+}
+
+.contact__legal-id {
+  margin: 0;
+  max-width: 44rem;
+  font-size: clamp(0.8rem, 0.95vw, 0.88rem);
+  line-height: 1.6;
+  color: var(--ink-faint);
+}
+
+.contact__legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem clamp(1rem, 2.2vw, 1.75rem);
+  font-size: clamp(0.8rem, 0.95vw, 0.88rem);
+}
+
+.contact__legal-links a {
+  color: var(--ink-faint);
+  text-decoration: none;
+  transition: color 0.3s var(--ease);
+}
+.contact__legal-links a:hover { color: var(--ink); }
+
+.contact__legal-copy { color: var(--ink-faint); white-space: nowrap; }
+
+@media (max-width: 40rem) {
+  .contact__legal { justify-content: flex-start; }
+}
 
 .contact__mark {
   display: flex;

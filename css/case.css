@@ -257,7 +257,10 @@
   font-family: var(--body);
   font-size: 2.4cqh;
   letter-spacing: 0.03em;
-  opacity: 0.66;
+  /* Was opacity 0.66, which dropped this label to 2.79:1 on Almond Frost
+     and 3.58:1 on Aztec Gold. The two labels are already a size apart, so
+     the hierarchy survives without also fading the smaller one into its
+     own band. */
   white-space: nowrap;
 }
 
@@ -756,3 +759,62 @@
   display: block;
 }
 
+
+/* ---------- the legal strip ------------------------------------------ */
+
+/* Named on every page rather than only in the landing page's footer:
+   article 10 of the LSSI asks for permanent, direct access to who runs
+   the site, and a case page is where a lot of people arrive first.
+
+   On a case page this is the last child of the gallery column, which is
+   a flex column with var(--gap) between its children, so it inherits its
+   own spacing and only has to draw the rule above itself. On the about
+   page it is the last child of main and sets its own gutters. */
+.case-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem clamp(1rem, 3vw, 2.5rem);
+  margin-top: clamp(1.5rem, 4vh, 3rem);
+  padding: clamp(1.25rem, 3vh, 1.75rem) clamp(1.5rem, 4vw, 3.5rem)
+           clamp(1.5rem, 4vh, 2.5rem);
+  border-top: 1px solid var(--rule);
+  font-size: clamp(0.8rem, 0.95vw, 0.88rem);
+}
+
+.case-legal p {
+  margin: 0;
+  max-width: 44rem;
+  line-height: 1.6;
+  color: var(--ink-faint);
+}
+
+.case-legal nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem clamp(1rem, 2.2vw, 1.75rem);
+}
+
+.case-legal a {
+  color: var(--ink-faint);
+  text-decoration: none;
+  transition: color 0.3s var(--ease);
+}
+.case-legal a:hover { color: var(--ink); }
+
+.case-legal span { color: var(--ink-faint); white-space: nowrap; }
+
+/* The about page has no rail, so the strip lines up with its own copy
+   rather than with the gallery's edge. */
+.studio > .case-legal {
+  margin-left: var(--gutter);
+  margin-right: var(--gutter);
+  padding-left: 0;
+  padding-right: 0;
+}
+
+@media (max-width: 40rem) {
+  .case-legal { justify-content: flex-start; }
+}

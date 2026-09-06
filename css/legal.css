@@ -1,0 +1,219 @@
+/* ===================================================================
+   Horizon Symmetry, legal documents
+
+   Privacy, terms, cookies. One column of prose under the shared bar,
+   set wide enough to read and narrow enough to scan. Tokens, fonts and
+   the bar itself come from styles.css and case.css.
+
+   Two things are deliberately undone here. Body copy is selectable
+   again, because a policy nobody can copy is a policy nobody can keep
+   a record of. And PP Mondwest is not used on these pages at all.
+   They are set in Space Grotesk and Satoshi, the two faces the studio
+   holds a licence for.
+   =================================================================== */
+
+.legal {
+  -webkit-user-select: text;
+          user-select: text;
+}
+
+.legal__doc {
+  max-width: 54rem;
+  margin: 0 auto;
+  padding:
+    calc(var(--bar) + clamp(2.5rem, 7vh, 5rem))
+    var(--gutter)
+    clamp(4rem, 12vh, 8rem);
+}
+
+/* ---------- masthead of the document -------------------------------- */
+
+.legal__eyebrow {
+  margin: 0 0 clamp(0.6rem, 1.4vh, 1rem);
+  font-family: var(--display);
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--violet-hot);
+}
+
+.legal__title {
+  margin: 0 0 clamp(0.9rem, 2vh, 1.4rem);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.2rem, 5vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.legal__meta {
+  margin: 0 0 clamp(2rem, 5vh, 3.25rem);
+  padding-bottom: clamp(1.5rem, 4vh, 2.5rem);
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.92rem;
+  color: var(--ink-faint);
+}
+
+/* The plain-language opener. Set apart from the document proper, because
+   it is the part most people will actually read. */
+.legal__summary {
+  margin: 0 0 clamp(2.5rem, 6vh, 4rem);
+  padding: clamp(1.4rem, 3vh, 2rem) clamp(1.4rem, 3vw, 2rem);
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+  background: rgba(155, 59, 224, 0.06);
+}
+.legal__summary h2 {
+  margin: 0 0 0.85rem;
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+}
+.legal__summary p { margin: 0 0 0.8rem; }
+.legal__summary p:last-child { margin-bottom: 0; }
+
+/* ---------- sections ------------------------------------------------- */
+
+.legal__doc h2 {
+  margin: clamp(2.5rem, 6vh, 3.75rem) 0 clamp(0.8rem, 1.8vh, 1.2rem);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(1.35rem, 2.2vw, 1.75rem);
+  line-height: 1.2;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+}
+
+.legal__doc h3 {
+  margin: clamp(1.6rem, 3.5vh, 2.25rem) 0 clamp(0.5rem, 1.2vh, 0.8rem);
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(1rem, 1.4vw, 1.12rem);
+  letter-spacing: 0.005em;
+  color: var(--ink);
+}
+
+.legal__doc p,
+.legal__doc li {
+  font-size: clamp(1rem, 1.15vw, 1.08rem);
+  line-height: 1.72;
+  color: var(--ink-dim);
+  text-wrap: pretty;
+}
+
+.legal__doc p { margin: 0 0 1.1rem; }
+
+.legal__doc ul,
+.legal__doc ol {
+  margin: 0 0 1.1rem;
+  padding-left: 1.35rem;
+}
+.legal__doc li { margin-bottom: 0.6rem; }
+.legal__doc li::marker { color: var(--ink-faint); }
+
+.legal__doc strong { color: var(--ink); font-weight: 500; }
+
+.legal__doc a {
+  color: var(--violet-hot);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+  text-decoration-color: rgba(230, 196, 250, 0.45);
+  transition: text-decoration-color 0.3s var(--ease);
+}
+.legal__doc a:hover { text-decoration-color: var(--violet-hot); }
+
+/* ---------- the identification block --------------------------------- */
+
+/* Required by article 10 of the LSSI, so it is set as a record rather
+   than as prose: one fact per row, nothing to read around. */
+.legal__id {
+  margin: 0 0 1.4rem;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.55rem clamp(1rem, 2.5vw, 2rem);
+  padding: clamp(1.2rem, 2.6vh, 1.6rem) clamp(1.2rem, 2.6vw, 1.6rem);
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+}
+.legal__id dt {
+  font-family: var(--display);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding-top: 0.28em;
+}
+.legal__id dd {
+  margin: 0;
+  font-size: clamp(0.98rem, 1.1vw, 1.05rem);
+  line-height: 1.6;
+  color: var(--ink-dim);
+}
+
+@media (max-width: 34rem) {
+  .legal__id { grid-template-columns: minmax(0, 1fr); gap: 0.2rem; }
+  .legal__id dd { margin-bottom: 0.9rem; }
+  .legal__id dd:last-child { margin-bottom: 0; }
+}
+
+/* ---------- the table of processors ---------------------------------- */
+
+/* Wider than the column on a phone, so it scrolls inside itself rather
+   than pushing the page sideways. */
+.legal__scroll {
+  margin: 0 0 1.4rem;
+  overflow-x: auto;
+  border: 1px solid var(--rule);
+  border-radius: 0.9rem;
+}
+
+.legal__table {
+  width: 100%;
+  min-width: 34rem;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.legal__table th,
+.legal__table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  line-height: 1.55;
+  border-bottom: 1px solid var(--rule);
+}
+.legal__table tr:last-child td { border-bottom: 0; }
+.legal__table th {
+  font-family: var(--display);
+  font-size: 0.76rem;
+  font-weight: 500;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+.legal__table td { color: var(--ink-dim); }
+
+/* ---------- foot ----------------------------------------------------- */
+
+.legal__foot {
+  margin-top: clamp(3rem, 8vh, 5rem);
+  padding-top: clamp(1.5rem, 4vh, 2.25rem);
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem clamp(1.25rem, 3vw, 2.25rem);
+  font-size: 0.95rem;
+}
+.legal__foot a {
+  color: var(--ink-dim);
+  text-decoration: none;
+  transition: color 0.3s var(--ease);
+}
+.legal__foot a:hover,
+.legal__foot a[aria-current="page"] { color: var(--ink); }

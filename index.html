@@ -27,9 +27,9 @@
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/styles.css?v=202609060900">
+<link rel="stylesheet" href="css/styles.css?v=202609061830">
 <!-- loaded here only so the case layout can be measured before opening it -->
-<link rel="stylesheet" href="css/case.css?v=202609060900">
+<link rel="stylesheet" href="css/case.css?v=202609061830">
 </head>
 
 <body>
@@ -83,7 +83,7 @@
          for a picture it never shows. -->
     <div class="hero__still" aria-hidden="true"></div>
 
-    <div class="hero__content" id="hero-content">
+    <div class="hero__content" id="hero-content" tabindex="-1">
       <h1 class="hero__title" id="hero-title">
         <span class="line"><span class="line__inner">Where Vision</span></span>
         <span class="line"><span class="line__inner">Becomes Reality</span></span>
@@ -116,7 +116,7 @@
   <!-- The stage pins to the viewport for the whole section and never moves.
        Scrolling slides the deck instead: cards rise from below, the front one
        centred and lit, its neighbours set back in depth and dimmed. -->
-  <section class="work" id="work" aria-label="Selected work" style="--n: 3">
+  <section class="work" id="work" aria-labelledby="work-title" style="--n: 3">
     <div class="work__track">
       <div class="work__stage">
         <div class="work__inner">
@@ -125,7 +125,7 @@
                against the card: the heading belongs to the paragraph under
                it rather than to the top of the screen -->
           <div class="work__copy">
-          <p class="section-label work__label">Projects</p>
+          <h2 class="section-label work__label" id="work-title">Projects</h2>
           <hr class="work__rule">
 
           <div class="work__panel">
@@ -291,6 +291,23 @@
       </div>
     </div>
 
+    <!-- Article 10 of the LSSI wants the company behind the site named
+         somewhere permanent and easy to reach from every page, and the
+         footer is that place. Set quieter than the link columns above it:
+         it has to be findable, not read. -->
+    <div class="contact__legal">
+      <p class="contact__legal-id">
+        Horizon Symmetry is a trading name of Zencup, S.L. · CIF B22569602 ·
+        Calle de Lagasca 63, 4A, 28001 Madrid, Spain
+      </p>
+      <nav class="contact__legal-links" aria-label="Legal">
+        <a href="privacy.html">Privacy</a>
+        <a href="terms.html">Terms</a>
+        <a href="cookies.html">Cookies</a>
+        <span class="contact__legal-copy">&copy; 2026 Zencup, S.L.</span>
+      </nav>
+    </div>
+
     <!-- The mark is drawn on a deforming mesh; the <img> is its source and
          its fallback, and stays if WebGL2 is unavailable. -->
     <div class="contact__mark">
@@ -316,7 +333,7 @@ if (getComputedStyle(document.querySelector(".hero__scene")).display !== "none")
 <script src="js/lock.js?v=202609060900" defer></script>
 <script src="js/hero.js?v=202608291318" defer></script>
 <script src="js/menu.js?v=202608291318" defer></script>
-<script src="js/work.js?v=202609061400" defer></script>
+<script src="js/work.js?v=202609061845" defer></script>
 <script src="js/lens.js?v=202608291318" defer></script>
 <!-- the case view is opened in place, so its behaviour lives here too -->
 <script src="js/case.js?v=202608291318" defer></script>

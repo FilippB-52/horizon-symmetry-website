@@ -23,8 +23,8 @@
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/styles.css?v=202609060900">
-<link rel="stylesheet" href="css/case.css?v=202609060900">
+<link rel="stylesheet" href="css/styles.css?v=202609061830">
+<link rel="stylesheet" href="css/case.css?v=202609061830">
 </head>
 
 <body class="case" style="--accent: #3F7548">
@@ -39,7 +39,13 @@
     <a href="index.html#work" aria-current="page">Work</a>
     <a href="index.html#contact">Contact</a>
   </nav>
-  <a class="bar__end" href="https://apply.horizonsymmetry.com">
+  <!-- The label is the only text in this link and the stylesheet hides it
+       below the phone breakpoint, which left the primary call to action
+       with no accessible name at all on a phone: a screen reader read out
+       "link" and stopped. aria-label carries the same words at every
+       width, and matches the visible text where the visible text is
+       showing. -->
+  <a class="bar__end" href="https://apply.horizonsymmetry.com" aria-label="Get in touch">
     <span>Get in touch</span>
     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"
          stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
