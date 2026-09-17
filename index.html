@@ -28,6 +28,13 @@
 <meta name="twitter:image" content="https://horizonsymmetry.com/assets/hero-reveal-1440.jpg">
 
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+
+<!-- The scene library is injected by a script at the end of <body>, which
+     measured as a 340ms delay before the request even started. Preloading
+     it here starts it during head parse. The media query is the same
+     breakpoint the injector tests, so phones still fetch nothing. -->
+<link rel="preload" as="script" media="(min-width: 701px)"
+      href="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js">
 <link rel="preconnect" href="https://assets.unicorn.studio" crossorigin>
 <link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
 
@@ -44,7 +51,7 @@
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
-<link rel="stylesheet" href="css/styles.css?v=202609061830">
+<link rel="stylesheet" href="css/styles.css?v=202609171420">
 <!-- loaded here only so the case layout can be measured before opening it -->
 <link rel="stylesheet" href="css/case.css?v=202609061830">
 
@@ -207,6 +214,19 @@
 <body>
 <a class="skip-link" href="#hero-content">Skip to content</a>
 
+<!-- Entrance loader. Held behind .is-armed, which is only ever added by the
+     inline script below, so a browser with JS off never sees an overlay it
+     would have no way of dismissing. aria-hidden because the page behind it
+     is fully readable to a screen reader and should not be narrated over. -->
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader__inner">
+    <img class="loader__mark" src="assets/logo-mark.png" alt=""
+         width="1039" height="867" fetchpriority="high" decoding="async">
+    <div class="loader__track"><span class="loader__fill"></span></div>
+  </div>
+</div>
+<script>document.getElementById("loader").classList.add("is-armed");</script>
+
 <header class="masthead">
   <a class="brand" href="/" aria-label="Horizon Symmetry, home">
     <img class="brand__mark" src="assets/logo-mark.png" alt="" width="1039" height="867" decoding="async">
@@ -352,7 +372,7 @@
               <img src="assets/work/arcut.jpg?v=202609021700" alt="Ar/Cut"
                    width="1600" height="1000" decoding="async">
               <video class="card__motion" width="1728" height="1080"
-                     autoplay muted loop playsinline preload="auto"
+                     muted loop playsinline preload="none"
                      poster="assets/work/arcut.jpg?v=202609021700" aria-hidden="true">
                 <source src="assets/work/arcut-motion.mp4?v=202609021700" type="video/mp4">
               </video>
@@ -365,7 +385,7 @@
               <img src="assets/work/crude.jpg?v=202609031200" alt="CRUDE"
                    width="1600" height="1000" decoding="async">
               <video class="card__motion" width="1728" height="1080"
-                     autoplay muted loop playsinline preload="auto"
+                     muted loop playsinline preload="none"
                      poster="assets/work/crude.jpg?v=202609031200" aria-hidden="true">
                 <source src="assets/work/crude-motion.mp4?v=202609031200" type="video/mp4">
               </video>
@@ -502,6 +522,7 @@ if (getComputedStyle(document.querySelector(".hero__scene")).display !== "none")
 !function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
 }
 </script>
+<script src="js/loader.js?v=202609171420" defer></script>
 <script src="js/lock.js?v=202609060900" defer></script>
 <script src="js/hero.js?v=202608291318" defer></script>
 <script src="js/menu.js?v=202608291318" defer></script>

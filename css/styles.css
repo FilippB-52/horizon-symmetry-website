@@ -1418,3 +1418,85 @@ body.case .masthead { display: none; }
   will-change: left, top, width, height;
 }
 
+
+/* ---------- entrance loader ------------------------------------------
+
+   Covers the hero while the Unicorn Studio scene is fetched and built.
+   Black on black, so there is no flash between the document painting and
+   this taking over: the only thing that arrives is the mark and the line.
+
+   The no-JS fallback matters. If loader.js never runs, nothing would ever
+   take the overlay away, so the overlay is only made visible by a class
+   that loader.js is not responsible for. It is inert until .is-armed is
+   put on it inline, and index.html only does that in a <script> block,
+   which a browser with JS off never executes. */
+
+.loader {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  place-items: center;
+  background: var(--void);
+  opacity: 1;
+  transition: opacity 0.85s var(--ease-out);
+}
+
+.loader.is-armed { display: grid; }
+
+.loader__inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(1.15rem, 2.2vw, 1.6rem);
+  transition: opacity 0.6s var(--ease-out), transform 0.85s var(--ease-out);
+}
+
+.loader__mark {
+  display: block;
+  width: auto;
+  height: clamp(2.5rem, 3.4vw, 3.75rem);
+  opacity: 0.94;
+  /* the same slow breath the scene has, so the wait is not inert */
+  animation: loader-breathe 2.4s var(--ease) infinite;
+}
+
+.loader__track {
+  position: relative;
+  width: clamp(8rem, 13vw, 12rem);
+  height: 1px;
+  background: var(--rule);
+  overflow: hidden;
+}
+
+.loader__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, var(--violet), var(--violet-hot));
+  box-shadow: 0 0 10px 1px rgba(155, 59, 224, 0.55);
+  transition: width 0.5s var(--ease-out);
+}
+
+@keyframes loader-breathe {
+  0%, 100% { opacity: 0.94; }
+  50%      { opacity: 0.55; }
+}
+
+/* the exit: the line holds, the mark lifts away, the field clears */
+.loader.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+.loader.is-done .loader__inner {
+  opacity: 0;
+  transform: translateY(-0.5rem);
+}
+.loader.is-gone { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .loader,
+  .loader__inner,
+  .loader__fill { transition-duration: 0.01ms; }
+  .loader__mark { animation: none; }
+}
