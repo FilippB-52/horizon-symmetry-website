@@ -9,6 +9,43 @@ Start at https://business.google.com
 
 ---
 
+## THE WALKTHROUGH, step by step
+
+You are not applying for SEO. There is nothing to register for and nothing to
+pay. This is claiming a free Google listing, the map pin with the name, hours
+and reviews that shows when you search a restaurant. No approval beyond Google
+checking the business is real.
+
+**1.** Go to https://www.google.com/business/ and sign in with
+   horizonsymmetrystudio@gmail.com, NOT a personal account. Whoever is signed
+   in owns the listing.
+
+**2.** "Add your business". Name exactly: Horizon Symmetry. Nothing appended.
+   Adding "Diseño Web Madrid" to the name gets listings suspended.
+
+**3.** Business type: Diseñador de sitios web. Pick it from the dropdown.
+
+**4.** "Add a location customers can visit?" Answer NO. This is what makes it
+   a service area business and keeps the address private.
+
+**5.** Where do you serve: Madrid, then add Comunidad de Madrid.
+
+**6.** Website horizonsymmetry.com, plus a real phone number that gets answered.
+
+**7.** Verification. It asks for the home address here, never published. Google
+   usually wants a short video: the workspace, the street or building entrance,
+   and proof the business is yours (laptop with the site open, or a document
+   with the Zencup name). Have it ready before starting, this is the step that
+   catches people out.
+
+**8.** Submit and wait, a few days to a few weeks.
+
+Once verified: paste the description from section 4 above, add the four
+services from section 5, upload the photos from section 7, set real hours.
+Then ask Ar/Cut, CRUDE and KOMNATA for reviews.
+
+---
+
 ## 1. Business name
 
     Horizon Symmetry
