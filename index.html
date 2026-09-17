@@ -33,6 +33,14 @@
 
 <link rel="canonical" href="https://horizonsymmetry.com/">
 
+<!-- The phone's hero is a CSS background inside a max-width:700px rule, so it
+     is not discovered until the stylesheet is parsed, which measured as an
+     8.0s LCP on a throttled Pixel 7. Preloading it here moves discovery to
+     HTML parse time. The candidates mirror the image-set in styles.css. -->
+<link rel="preload" as="image" media="(max-width: 700px)" fetchpriority="high"
+      href="assets/hero-mobile-1242.jpg"
+      imagesrcset="assets/hero-mobile-828.jpg 2x, assets/hero-mobile-1242.jpg 3x">
+
 <link rel="preload" href="assets/fonts/SpaceGrotesk-Variable.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
 
