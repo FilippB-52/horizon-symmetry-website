@@ -33,8 +33,13 @@
      measured as a 340ms delay before the request even started. Preloading
      it here starts it during head parse. The media query is the same
      breakpoint the injector tests, so phones still fetch nothing. -->
+<!-- integrity and crossorigin must match the injector at the end of <body>, or the
+     preload is discarded and the file is fetched twice. jsDelivr serves /gh/ from a
+     git tag, which its owner can move; the hash means a swapped file will not run. -->
 <link rel="preload" as="script" media="(min-width: 701px)"
-      href="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js">
+      href="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js"
+      integrity="sha384-zq7Do6iKKQcd7t/8ws0FKTzJRQ+jx40/HP4kmb/1ynIrrD4Aplhnl7/7P4a79RQ+"
+      crossorigin="anonymous">
 <link rel="preconnect" href="https://assets.unicorn.studio" crossorigin>
 <link rel="preconnect" href="https://storage.googleapis.com" crossorigin>
 
@@ -518,8 +523,9 @@
    one place it is written. Answered "no", none of this runs: the library
    is never fetched and the scene is never built. */
 if (getComputedStyle(document.querySelector(".hero__scene")).display !== "none") {
-/* Unicorn Studio loader, verbatim from the project embed */
-!function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
+/* Unicorn Studio loader, from the project embed plus the integrity pair. Both the
+   hash and crossOrigin have to stay identical to the preload in <head>. */
+!function(){var u=window.UnicornStudio;if(u&&u.init){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){u.init()})}else{u.init()}}else{window.UnicornStudio={isInitialized:!1};var i=document.createElement("script");i.src="https://cdn.jsdelivr.net/gh/hiunicornstudio/unicornstudio.js@v2.2.8/dist/unicornStudio.umd.js",i.integrity="sha384-zq7Do6iKKQcd7t/8ws0FKTzJRQ+jx40/HP4kmb/1ynIrrD4Aplhnl7/7P4a79RQ+",i.crossOrigin="anonymous",i.onload=function(){if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",function(){UnicornStudio.init()})}else{UnicornStudio.init()}},(document.head||document.body).appendChild(i)}}();
 }
 </script>
 <script src="js/loader.js?v=202609171420" defer></script>
