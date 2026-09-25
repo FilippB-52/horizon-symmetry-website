@@ -37,9 +37,11 @@ Change one, check the other.
 arm64 binaries in about ten seconds. No Homebrew, no sudo. An older handoff claimed video work was
 blocked; it was wrong.
 
+**Vercel serves every file in the repo.** `CLAUDE.md` and `SEO/` were publicly readable until
+2026-09-25. `.vercelignore` now keeps them off the deploy; any new internal file or folder goes in
+there in the same commit, then check it 404s on the live URL.
+
 ## Known open items
-- `arcut-04.mp4` is labelled "the logotype resolving, in motion" in `arcut.html`. It is a colour
-  palette board. Still unfixed.
 - `alley.html` and `neirion.html` exist in the repo, unlinked from the deck. Restoring them is markup.
 - KOMNATA slots 08 and 13 need real assets, slot 01 is marked "video" and none exists.
 
