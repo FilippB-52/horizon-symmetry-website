@@ -85,11 +85,11 @@ Verify with the Madrid address you actually work from. It is never shown
 publicly on a service area profile, it is only used to prove the business is
 real and to anchor it to the city.
 
-Do not use Calle de Lagasca 63, 4A unless you genuinely work there. Google
-detects registered agent and virtual office addresses by address clustering
-and suspends the profiles that use them. The vault also still lists it as an
-open question whether that is the real office or just the company's
-registered address, so resolve that before touching it.
+Do not use Calle de Lagasca 63, 4A. It is the company's registered address,
+and the studio has worked remotely since July 2026, so there is no office to
+verify. Google detects registered agent and virtual office addresses by
+address clustering and suspends the profiles that use them. Verify with the
+home address instead; a service area profile never shows it.
 
 Service area, add both:
 

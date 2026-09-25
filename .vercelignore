@@ -1,0 +1,5 @@
+# Internal notes live in the repo but must never be served by the site.
+# Vercel publishes every file it uploads, and these were live at
+# horizonsymmetry.com/CLAUDE.md and /SEO/... until 2026-09-25.
+/CLAUDE.md
+/SEO/
