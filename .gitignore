@@ -4,3 +4,6 @@ node_modules/
 
 # Raw working material, not used by the site (kept local only)
 _source/
+
+# Local copies for manual upload to Google Business Profile
+/Google Business Profile photos/
