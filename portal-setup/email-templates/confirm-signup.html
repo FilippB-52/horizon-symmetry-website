@@ -1,0 +1,111 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light only" />
+    <title>Confirm your email for your client space</title>
+  </head>
+  <body style="margin:0; padding:0; background:#ffffff;">
+    <div style="display:none; max-height:0; overflow:hidden; opacity:0;">One click and your client space is ready.</div>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           bgcolor="#ffffff" style="background:#ffffff; margin:0; padding:0;">
+
+      <tr>
+        <td bgcolor="#0B0A10" style="background:#0B0A10; padding:18px 16px;">
+          <table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" border="0"
+                 style="width:100%; max-width:620px;">
+            <tr>
+              <td valign="middle" style="line-height:0; font-size:0; width:43px;">
+                <img src="https://horizonsymmetry.com/assets/logo-mark.png" width="43" height="36" alt="Horizon Symmetry"
+                     style="display:block; border:0; outline:none; width:43px; height:36px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:36px; color:#ffffff;" />
+              </td>
+              <td valign="middle" style="padding-left:16px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; font-weight:bold; letter-spacing:2.4px; text-transform:uppercase; color:#ECE8F2; white-space:nowrap;">
+                Horizon Symmetry
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td align="center" style="padding:0 16px 0 16px; background:#ffffff;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 style="width:100%; max-width:620px; background:#ffffff; border-left:1px solid #9B3BE0; border-right:1px solid #9B3BE0; border-bottom:1px solid #9B3BE0; border-radius:0 0 10px 10px;">
+
+            <tr>
+              <td style="padding:34px 32px 0 32px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:22px; line-height:1.3; font-weight:bold; color:#14111A;">
+                Confirm your email
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 32px 0 32px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15.5px; line-height:1.7; color:#34303C;">
+                <p style="margin:0;">Confirm your email and your client space is ready. It's where your project with us lives, from the first questions to the final files.</p>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:24px 32px 0 32px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td bgcolor="#EBD9FA" style="background:#EBD9FA; border-radius:8px; padding:3px;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td bgcolor="#9B3BE0" style="background:#9B3BE0; border-radius:5px; border-bottom:2px solid #7A2CB8;">
+                            <a href="{{ .SiteURL }}/portal/confirm?token_hash={{ .TokenHash }}&type=email"
+                               style="display:inline-block; padding:14px 30px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:15px; font-weight:bold; letter-spacing:0.3px; color:#ffffff; text-decoration:none;">
+                              Confirm my email
+                            </a>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:14px 32px 0 32px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#6E6879;">
+                Button not working? Copy this into your browser:<br />
+                <a href="{{ .SiteURL }}/portal/confirm?token_hash={{ .TokenHash }}&type=email" style="color:#7A2CB8; word-break:break-all;">{{ .SiteURL }}/portal/confirm?token_hash={{ .TokenHash }}&type=email</a>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:28px 32px 0 32px;">
+                <div style="height:1px; background:#EFEAF5; line-height:1px; font-size:0;">&nbsp;</div>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:18px 32px 32px 32px; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:13px; line-height:1.6; color:#6E6879;">
+                If you didn't create an account with Horizon Symmetry, ignore this email and nothing happens.
+              </td>
+            </tr>
+
+          </table>
+        </td>
+      </tr>
+
+      <tr>
+        <td align="center" style="padding:18px 16px 34px 16px; background:#ffffff;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 style="width:100%; max-width:620px;">
+            <tr>
+              <td style="font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7; color:#6E6879;">
+                Brand, web, software and content for early-stage founders.
+              </td>
+              <td align="right" style="text-align:right; font-family:'Helvetica Neue',Helvetica,Arial,sans-serif; font-size:12px; line-height:1.7;">
+                <a href="https://horizonsymmetry.com" style="color:#9B3BE0; text-decoration:none;">horizonsymmetry.com</a>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+
+    </table>
+  </body>
+</html>

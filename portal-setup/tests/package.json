@@ -1,0 +1,16 @@
+{
+  "name": "client-space-tests",
+  "private": true,
+  "type": "module",
+  "description": "Checks for the client space. npm install once in this folder, then npm test.",
+  "scripts": {
+    "test": "node db.test.mjs && node browser.test.mjs",
+    "db": "node db.test.mjs",
+    "browser": "node browser.test.mjs"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.0",
+    "@supabase/supabase-js": "2.117.2",
+    "playwright": "1.63.0"
+  }
+}

@@ -3,3 +3,12 @@
 # horizonsymmetry.com/CLAUDE.md and /SEO/... until 2026-09-25.
 /CLAUDE.md
 /SEO/
+# The client space: example records are for local test mode only (live
+# records come from the database), and the setup SQL is for us.
+/portal/data/
+/portal-setup/
+# Client files are served from the private Supabase bucket, never from
+# the site. This copy is what test mode shows on localhost, and what
+# gets uploaded to the bucket.
+/portal/files/
+/.github/

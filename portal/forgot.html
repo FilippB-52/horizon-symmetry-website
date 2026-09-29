@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- The door to a client's private space. Never indexed, never linked from the site. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>Reset your password · Client space · Horizon Symmetry</title>
+<meta name="theme-color" content="#000000">
+
+<link rel="icon" href="../assets/favicon.ico" sizes="32x32">
+<link rel="icon" href="../assets/favicon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="../assets/favicon-180.png">
+
+<link rel="preload" href="../assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/PPMondwest-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="../css/styles.css?v=202609261300">
+<link rel="stylesheet" href="../css/portal.css?v=202609281500">
+<link rel="stylesheet" href="../css/portal-login.css?v=202609281500">
+</head>
+
+<body class="portal auth" data-page="forgot">
+<div class="auth__glow" aria-hidden="true"></div>
+
+<main class="auth__wrap">
+  <a class="auth__studio" href="../"><img src="../assets/logo-mark.png" alt="" width="1039" height="867">Horizon Symmetry</a>
+
+  <section class="auth__card" aria-labelledby="auth-title">
+    <h1 class="auth__title" id="auth-title" tabindex="-1">Forgot your password?</h1>
+    <p class="auth__lede">Tell us your email and we'll send you a link to choose a new one.</p>
+    <form class="auth__form" novalidate>
+      <p class="auth__err" id="form-err" role="alert"></p>
+      <div class="fld">
+        <label for="email">Email</label>
+        <input class="field" id="email" name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="none" spellcheck="false" required aria-describedby="email-err">
+        <p class="fld__err" id="email-err" aria-live="polite"></p>
+      </div>
+      <button class="cta cta--solid auth__go" type="submit"><span class="cta__label">Send the link</span></button>
+    </form>
+    <p class="auth__alt">Remembered it? <a href="login">Log in</a></p>
+  </section>
+
+  <div class="auth__test" id="test-note" hidden></div>
+</main>
+
+<noscript>
+  <p style="padding:0 2rem 4rem;text-align:center;color:#B9B2C6">
+    Logging in needs JavaScript. Write to horizonsymmetrystudio@gmail.com and we'll send everything by email.
+  </p>
+</noscript>
+
+<script src="config.js?v=202609281500"></script>
+<script src="../js/portal-auth.js?v=202609291505" defer></script>
+<script src="../js/portal-login.js?v=202609281500" defer></script>
+</body>
+</html>

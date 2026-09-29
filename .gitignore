@@ -7,3 +7,12 @@ _source/
 
 # Local copies for manual upload to Google Business Profile
 /Google Business Profile photos/
+
+# Client space: real client records and files. The GitHub repo is public,
+# so these never go into git. Live copies sit in Supabase (the clients
+# table and the private client-files bucket); these local ones drive test
+# mode on localhost and are what gets uploaded.
+/portal/data/
+/portal/files/
+/portal-setup/example-client-*.sql
+/portal-setup/tests/node_modules/

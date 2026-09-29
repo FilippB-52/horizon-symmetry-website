@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+<!-- The door to a client's private space. Never indexed, never linked from the site. -->
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>New password · Client space · Horizon Symmetry</title>
+<meta name="theme-color" content="#000000">
+
+<link rel="icon" href="../assets/favicon.ico" sizes="32x32">
+<link rel="icon" href="../assets/favicon-512.png" type="image/png" sizes="512x512">
+<link rel="apple-touch-icon" href="../assets/favicon-180.png">
+
+<link rel="preload" href="../assets/fonts/Satoshi-Regular.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/PPMondwest-Regular.woff2" as="font" type="font/woff2" crossorigin>
+
+<link rel="stylesheet" href="../css/styles.css?v=202609261300">
+<link rel="stylesheet" href="../css/portal.css?v=202609281500">
+<link rel="stylesheet" href="../css/portal-login.css?v=202609281500">
+</head>
+
+<body class="portal auth" data-page="reset">
+<div class="auth__glow" aria-hidden="true"></div>
+
+<main class="auth__wrap">
+  <a class="auth__studio" href="../"><img src="../assets/logo-mark.png" alt="" width="1039" height="867">Horizon Symmetry</a>
+
+  <section class="auth__card" aria-labelledby="auth-title">
+    <h1 class="auth__title" id="auth-title" tabindex="-1">Choose a new password</h1>
+    <p class="auth__lede">Pick something you haven't used here before. You'll go straight to your space after.</p>
+    <form class="auth__form" novalidate>
+      <p class="auth__err" id="form-err" role="alert"></p>
+      <div class="fld">
+        <label for="password">New password</label>
+        <div class="pw">
+          <input class="field" id="password" name="password" type="password" autocomplete="new-password" required minlength="8" aria-describedby="password-err password-hint">
+          <button class="pw__eye" type="button" data-eye aria-label="Show password" aria-pressed="false"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.8 10S4.8 4.5 10 4.5 18.2 10 18.2 10 15.2 15.5 10 15.5 1.8 10 1.8 10z"/><circle cx="10" cy="10" r="2.6"/></svg></button>
+        </div>
+        <p class="fld__hint" id="password-hint">At least 8 characters.</p>
+        <p class="fld__err" id="password-err" aria-live="polite"></p>
+      </div>
+      <button class="cta cta--solid auth__go" type="submit"><span class="cta__label">Save password</span></button>
+    </form>
+  </section>
+
+  <div class="auth__test" id="test-note" hidden></div>
+</main>
+
+<noscript>
+  <p style="padding:0 2rem 4rem;text-align:center;color:#B9B2C6">
+    Logging in needs JavaScript. Write to horizonsymmetrystudio@gmail.com and we'll send everything by email.
+  </p>
+</noscript>
+
+<script src="config.js?v=202609281500"></script>
+<script src="../js/portal-auth.js?v=202609291505" defer></script>
+<script src="../js/portal-login.js?v=202609281500" defer></script>
+</body>
+</html>
