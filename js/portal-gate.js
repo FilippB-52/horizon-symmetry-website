@@ -68,7 +68,9 @@
     screen({
       title: team ? "All clients" : "Your projects",
       body: '<ul class="gate__list">' + list.map(function (c) {
-        return '<li><a href="space?c=' + encodeURIComponent(c.id) + '"><span>' + esc(c.name) + '</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/></svg></a></li>';
+        /* the team opens a space with the stage switcher on (portal.js
+           also checks it is the team before showing it) */
+        return '<li><a href="space?c=' + encodeURIComponent(c.id) + (team ? '&preview' : '') + '"><span>' + esc(c.name) + '</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/></svg></a></li>';
       }).join("") + "</ul>"
     });
   }
