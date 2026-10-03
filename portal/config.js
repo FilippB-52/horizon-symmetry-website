@@ -13,8 +13,8 @@
    =================================================================== */
 
 window.HS_PORTAL = {
-  supabaseUrl: "",
-  supabaseKey: "",
+  supabaseUrl: "https://konlktdvtzyuhgfodyis.supabase.co",
+  supabaseKey: "sb_publishable_HhC9mlXI7oNMS6HufZ2ueQ_4r6_iM84",
   /* true once Google is switched on in Supabase > Authentication > Providers */
   google: false
 };

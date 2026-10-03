@@ -43,9 +43,17 @@ function check(name, ok, got) {
 
 const browser = await chromium.launch({ args: ["--host-resolver-rules=MAP hs.test 127.0.0.1"] });
 
+// Test and off mode are what the site does before it is connected, so
+// those pages get an empty config whatever portal/config.js holds now.
+async function notConnected(page) {
+  await page.route("**/portal/config.js*", r => r.fulfill({ contentType: "text/javascript",
+    body: `window.HS_PORTAL = { supabaseUrl: "", supabaseKey: "", google: false };` }));
+  return page;
+}
+
 // ------------------------------------------------------------------ test mode
 {
-  const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+  const page = await notConnected(await browser.newPage({ viewport: { width: 1280, height: 900 } }));
   await page.goto(SITE + "/portal/login");
   check("test mode: the login shows the test box", await page.locator("#test-note").isVisible(), "hidden");
   await page.fill("input[type=email]", "client@test.hs");
@@ -62,7 +70,7 @@ const browser = await chromium.launch({ args: ["--host-resolver-rules=MAP hs.tes
 
 // ------------------------------------------------------------------ off mode
 {
-  const page = await browser.newPage();
+  const page = await notConnected(await browser.newPage());
   await page.goto("http://hs.test:5173/portal/space");
   await page.waitForURL(/\/portal\/login/, { timeout: 8000 }).catch(() => {});
   check("off mode: the space sends you to the login", /\/portal\/login/.test(page.url()), page.url());

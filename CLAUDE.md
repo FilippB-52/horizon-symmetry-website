@@ -44,8 +44,11 @@ there in the same commit, then check it 404s on the live URL.
 ## Client space (post-purchase portal, replaces the Notion client page)
 
 Built 2026-09-26, login added 2026-09-28, private files and account emails 2026-09-29.
-**Deployed CLOSED on 2026-09-29:** with `portal/config.js` empty the live `/portal/login` says
-"Not open yet" and nobody gets in. Not connected to Supabase yet. Call it "the client space", never "the Crude workspace": Crude is only the example
+**Connected to Supabase on 2026-10-03** (project `hs-client-space`, West EU / Paris, free plan,
+owned by the studio Gmail) and open on the live site. **Until Resend SMTP is set up, Supabase only
+emails the studio**, so a client can't confirm a signup or reset a password themselves: create
+their account in Authentication > Users > Add user, with auto confirm on. The branded email
+templates also wait for SMTP (Supabase won't let you edit them before it). Call it "the client space", never "the Crude workspace": Crude is only the example
 client. Connection steps, SQL and everyday tasks: `portal-setup/README.md`.
 
 - **Entry:** `/portal/login` (also `signup`, `forgot`, `reset`, `confirm`), then `/portal/space`.

@@ -1,8 +1,9 @@
 # Client space login: connecting it
 
-Built 28 Sep 2026, local only. The login works end to end in **test mode**
-on `http://localhost:5173/portal/login` (pretend accounts, this browser only).
-Connecting it to Supabase is what turns the pretend accounts into real ones.
+Built 28 Sep 2026. **Connected 3 Oct 2026** to the Supabase project `hs-client-space`
+(Paris, free plan, studio Gmail): steps 1 to 5 and 7 to 9 below are done, 6 waits for Resend.
+Test mode (pretend accounts) now only runs inside `portal-setup/tests`, which feed the pages an
+empty config.
 Nothing in this folder is ever served by the site (`.vercelignore`).
 
 ## What is where
@@ -39,11 +40,10 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
    Site URL: `http://localhost:5173` while testing, `https://horizonsymmetry.com` at launch.
    Redirect URLs: `http://localhost:5173/portal/**` and `https://horizonsymmetry.com/portal/**`.
 5. **Authentication > Sign In / Providers > Email**: leave "Confirm email" on.
-6. **Authentication > Emails > Templates**: for Confirm signup, Reset password and Invite user,
-   paste the subject and the whole file from `portal-setup/email-templates/`
-   (`confirm-signup.html`, `reset-password.html`, `invite.html`; subjects are printed by
-   `node portal-setup/email-templates/build.mjs`). They send people to our own confirm page, so
-   an email scanner opening the link can't use it up before the client clicks.
+6. **The account emails wait for Resend.** Supabase only lets you edit the templates once custom
+   SMTP is set up (found 3 Oct 2026), so until then the plain Supabase emails go out. They work:
+   their link carries the session in the `#hash`, which `confirm()` in `js/portal-auth.js` and
+   the client library pick up. The branded ones are pasted in "Before a real client uses it".
 7. **Storage > client-files**: make a folder named after the client id (`crude`) and upload
    everything in `portal/files/crude/`, keeping the `fonts` folder. Files not uploaded show as
    "Uploading shortly" in the space; nothing falls back to a public address.
@@ -62,6 +62,12 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   (free: 3,000 a month, 100 a day), sender `no-reply@horizonsymmetry.com`, after verifying
   the domain in Resend. The DNS records go in GoDaddy. Resend's records sit on a `send.`
   subdomain: do not touch the existing MX records, they carry our email.
+- **Branded account emails**, once SMTP is on: Authentication > Emails > Templates, for Confirm
+  signup, Reset password and Invite user, paste the subject and the whole file from
+  `portal-setup/email-templates/` (`confirm-signup.html`, `reset-password.html`, `invite.html`;
+  subjects are printed by `node portal-setup/email-templates/build.mjs`). They send people to
+  our own confirm page, so an email scanner opening the link can't use it up before the client
+  clicks.
 - **Google sign-in (optional).** Authentication > Providers > Google, with a client ID and
   secret from Google Cloud Console (consent screen External, redirect URI
   `https://<project-ref>.supabase.co/auth/v1/callback`). Then `google: true` in
@@ -74,6 +80,9 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   `update public.clients set emails = array['client@their.com'] where id = 'crude';`
   They sign up with that email (or you use Authentication > Users > Invite user) and
   land straight in their space. Anyone whose email is not linked sees "Your account is ready".
+- **Until Resend is set up**, signing up and Invite user both need an email Supabase won't send
+  to a client. Instead: Authentication > Users > Add user > Create new user, their email, a
+  password, "Auto Confirm User" on. Send them the address and password yourself.
 - **Add a new client:** copy `portal/data/crude.js` to `portal/data/<id>.js`, fill it in, then
   `node portal-setup/make-client-sql.mjs portal/data/<id>.js client@their.com` and paste
   the output into the SQL Editor. Re-running it updates the record and keeps their answers.
