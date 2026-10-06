@@ -45,6 +45,11 @@
       ],
       "destination": "https://horizonsymmetry.com/:path*",
       "permanent": true
+    },
+    {
+      "source": "/work",
+      "destination": "https://contra.com/horizon_symmetry_82azi8f5/work",
+      "permanent": false
     }
   ],
   "headers": [
