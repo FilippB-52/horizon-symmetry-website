@@ -506,6 +506,8 @@
         '<div class="pick" aria-checked="true"><span class="pick__sample" style="font-family:' + esc(ty.css) + '">' + esc(D.typeSample) + "</span>" +
         '<div class="pick__body"><span class="pick__name">Body text · ' + esc(ty.name) + '<span class="pick__tick">' + I.check + "</span></span>" +
         '<span class="pick__idea">' + esc(ty.note) + "</span></div></div></div>" +
+        /* what they asked us to change, kept in view for them and for us */
+        (m.decision.note ? '<section><p class="p-sub">' + (VIEWER && VIEWER.team ? "Their note" : "Your note") + '</p><p class="p-lede" style="margin:0">' + esc(m.decision.note) + "</p></section>" : "") +
         '<div><button class="p-link" type="button" data-action="zoom" data-set="slides" data-i="' + li + '">See all three directions' + I.right + "</button></div>";
     }
 
