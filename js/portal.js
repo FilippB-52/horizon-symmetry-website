@@ -531,7 +531,7 @@
       '<section><p class="p-sub">01 · Your logo</p><div class="picks" role="radiogroup" aria-label="Logo direction">' + logoCards + "</div></section>" +
       '<section><p class="p-sub">02 · Your body text</p><div class="picks picks--type" role="radiogroup" aria-label="Body typeface">' + typeCards + "</div></section>" +
       '<section class="decide"><label class="p-sub" for="pick-note" style="margin:0">Anything you\'d change? Optional</label>' +
-      '<textarea class="field" id="pick-note" rows="3" placeholder="e.g. love the reserve, but could the d be a touch heavier?">' +
+      '<textarea class="field" id="pick-note" rows="3" placeholder="e.g. love ' + esc(D.logo[0].name.toLowerCase()) + ', but could it be a touch bolder?">' +
       esc((local.draftPick && local.draftPick.note) || "") + "</textarea>" +
       '<div class="row-actions">' + cta("Send my choice", "decide", true) + "</div></section>";
   }

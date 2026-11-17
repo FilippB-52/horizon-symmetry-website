@@ -21,7 +21,7 @@
   var gate = document.getElementById("gate");
   var STUDIO = "horizonsymmetrystudio@gmail.com";
   var MAIL = '<a href="mailto:' + STUDIO + '">' + STUDIO + "</a>";
-  var PORTAL_JS = "../js/portal.js?v=202611171400";
+  var PORTAL_JS = "../js/portal.js?v=202611171800";
 
   if (!A || A.mode === "off") { location.replace("login"); return; }
 
