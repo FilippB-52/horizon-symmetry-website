@@ -133,8 +133,8 @@
       waitingNow = list || [];
       box.innerHTML = waitingHtml(done);
     }).catch(function () {
-      /* an older database without the studio's functions: the list still works */
-      box.innerHTML = "";
+      /* a database without the studio's functions yet: say so, never go quiet */
+      box.innerHTML = '<p class="wait__none">The list of people waiting to be connected is not switched on yet. It needs the studio tools pasted into the database once (portal-setup/supabase.sql).</p>';
     });
   }
 
