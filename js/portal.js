@@ -92,7 +92,9 @@
     var t = date(iso);
     return String(t.getHours()).padStart(2, "0") + ":" + String(t.getMinutes()).padStart(2, "0");
   }
-  function money(n) { return "€" + (n % 1 ? n.toFixed(2) : String(n)); }
+  function money(n) { return "€" + (n % 1 ? n.toFixed(2) : n.toLocaleString("en-GB")); }
+  /* a call can be a day with no time set yet */
+  function hasClock(iso) { return /T\d/.test(iso); }
   function iso(t) {
     return t.getFullYear() + "-" + String(t.getMonth() + 1).padStart(2, "0") + "-" + String(t.getDate()).padStart(2, "0");
   }
@@ -148,24 +150,28 @@
     m.qCount = C.questions.length;
     m.qAnswered = C.questions.filter(answered).length;
     m.qStarted = !!local.qStarted && m.qAnswered > 0;
-    m.qSent = local.qSentOn || (day(C.questionnaire.on) <= t ? C.questionnaire.on : null);
+    m.qSent = local.qSentOn || (C.questionnaire.on && day(C.questionnaire.on) <= t ? C.questionnaire.on : null);
 
     m.calls = C.calls.map(function (c) {
       var booked = day(c.bookedOn) <= t || (c.kickoff && local.kickoffBooked);
       return Object.assign({}, c, { booked: booked, past: day(c.on) < t, localOnly: booked && day(c.bookedOn) > t });
     }).filter(function (c) { return c.booked; });
     var kick = m.calls.filter(function (c) { return c.kickoff; })[0];
+    /* a project that started on a signed contract has no kickoff to book */
+    m.hasKickoff = C.calls.some(function (c) { return c.kickoff; });
     m.kickoffBooked = !!kick;
     m.kickoffUpcoming = !!kick && !kick.past;
     m.kickoff = kick;
     m.nextCall = m.calls.filter(function (c) { return !c.past; })[0] || null;
 
-    m.reviewOpen = day(C.review.opensOn) <= t;
-    if (local.review && local.review.on) m.decision = local.review;
-    else if (day(C.review.decidedOn) <= t) m.decision = Object.assign({ on: C.review.decidedOn }, C.review.decision);
+    /* only a project with directions to choose between has a review */
+    var R = C.review || null;
+    m.reviewOpen = !!R && day(R.opensOn) <= t;
+    if (R && local.review && local.review.on) m.decision = local.review;
+    else if (R && R.decidedOn && day(R.decidedOn) <= t) m.decision = Object.assign({ on: R.decidedOn }, R.decision);
     else m.decision = null;
     /* the direction step ends when the client decides, not on a date */
-    if (m.decision) m.steps.forEach(function (s) { if (s.id === C.review.step) s.status = "done"; });
+    if (m.decision) m.steps.forEach(function (s) { if (s.id === R.step) s.status = "done"; });
     m.current = m.steps.filter(function (s) { return s.status !== "done"; })[0] || null;
 
     m.deliverables = C.deliverables.map(function (x) {
@@ -180,14 +186,15 @@
     m.pay = C.payments.items.map(function (p) {
       var paid = !!p.paidOn && day(p.paidOn) <= t;
       var due = !paid && (!p.dueOn || day(p.dueOn) <= t);
-      return Object.assign({}, p, { paid: paid, due: due });
+      var invoiced = !paid && !!p.invoicedOn && day(p.invoicedOn) <= t;
+      return Object.assign({}, p, { paid: paid, due: due, invoiced: invoiced });
     });
     m.paidInFull = m.pay.every(function (p) { return p.paid; });
     m.payDue = m.pay.filter(function (p) { return p.due; })[0] || null;
 
     m.state = !m.qSent ? "questionnaire"
-      : !m.kickoffBooked ? "kickoff"
-      : m.kickoffUpcoming ? "kickoff-booked"
+      : m.hasKickoff && !m.kickoffBooked ? "kickoff"
+      : m.hasKickoff && m.kickoffUpcoming ? "kickoff-booked"
       : m.reviewOpen && !m.decision ? "review"
       : m.delivered && m.payDue ? "pay"
       : m.delivered && m.paidInFull ? "complete"
@@ -234,9 +241,9 @@
           title: "Tell us about " + C.name + ".",
           text: m.qStarted
             ? "You're " + m.qAnswered + " of " + m.qCount + " in, and it's all saved. Pick up where you left off."
-            : m.qCount + " short questions, about " + C.questionnaire.minutes + " minutes. We've filled in what we already know, so most of it is checking our homework.",
+            : m.qCount + " short questions, about " + C.questionnaire.minutes + " minutes. " + (C.questionnaire.intro || "We've filled in what we already know, so most of it is checking our homework."),
           actions: cta(m.qStarted ? "Continue the questionnaire" : "Start the questionnaire", "q-open", true) +
-            link("Book your kickoff call", "book")
+            (m.hasKickoff ? link("Book your kickoff call", "book") : "")
         };
       case "kickoff":
         return {
@@ -344,7 +351,7 @@
         var where = '<a class="where" href="#timeline"><div class="where__row"><p class="p-sub">Where we are</p>' +
           '<span class="where__go">Full timeline' + I.right + "</span></div>" + track(m) + "</a>";
         var facts = '<dl class="facts">' +
-          "<div><dt>Package</dt><dd>" + esc(p.package) + " <span>· for a " + esc(p.adaptedFor.toLowerCase()) + "</span></dd></div>" +
+          "<div><dt>Package</dt><dd>" + esc(p.package) + (p.adaptedFor ? " <span>· for a " + esc(p.adaptedFor.toLowerCase()) + "</span>" : "") + "</dd></div>" +
           "<div><dt>Timeline</dt><dd>" + esc(p.window) + "</dd></div>" +
           "<div><dt>Your team</dt><dd>" + p.team.map(function (x) { return esc(x.name) + " <span>· " + esc(x.role) + "</span>"; }).join("<br>") + "</dd></div>" +
           "</dl>";
@@ -368,7 +375,7 @@
           var when = p.status === "done" ? "Done " + short(p.end) : p.status === "now" ? "Now, until " + short(p.end) : range(p.start, p.end);
           var steps = p.steps.map(function (s) {
             var sw = s.status === "done" ? "Done " + short(s.end) : s.status === "now" ? "By " + short(s.end) : range(s.start, s.end);
-            if (s.id === C.review.step && s.status === "now" && m.reviewOpen && !m.decision) sw = "Your pick";
+            if (C.review && s.id === C.review.step && s.status === "now" && m.reviewOpen && !m.decision) sw = "Your pick";
             return '<li class="step is-' + s.status + '"><span class="mark">' + (s.status === "done" ? I.check : "") + "</span>" +
               '<div><p class="step__name">' + esc(s.name) + '</p><p class="step__desc">' + esc(s.desc) + "</p></div>" +
               '<span class="step__when">' + esc(sw) + "</span></li>";
@@ -384,7 +391,8 @@
             "</div></div></div>";
         }).join("");
         var lede = m.current
-          ? "Five phases, from your first answers to your final files. We're in <strong>" + esc(m.current.phase.toLowerCase()) + "</strong>."
+          ? (["", "One phase", "Two phases", "Three phases", "Four phases", "Five phases", "Six phases", "Seven phases"][C.phases.length] || C.phases.length + " phases") +
+            ", from your first answers to " + esc(C.project.endsWith || "your final files") + ". We're in <strong>" + esc(m.current.phase.toLowerCase()) + "</strong>."
           : "Every phase done, start to finish.";
         return viewHead("Timeline", m.current ? "Where we are" : "Done, start to finish", lede, link("Save as PDF", "print")) +
           track(m) + '<div class="phases">' + list + "</div>";
@@ -399,7 +407,7 @@
       render: function (m) {
         if (m.qSent) {
           var mine = C.questions.some(answered) && local.qSentOn;
-          return viewHead("Brand discovery", "Questionnaire",
+          return viewHead(C.questionnaire.label || "Brand discovery", "Questionnaire",
             "Sent " + nice(m.qSent) + ". " + (mine ? "Here's what you told us. Want to change something? Send us a message." : "Your answers are with the studio.")) +
             (mine ? '<dl class="answers">' + C.questions.map(function (q) {
               var a = answerText(q);
@@ -407,7 +415,7 @@
             }).join("") + "</dl>" : "");
         }
         var p = m.qAnswered / m.qCount;
-        return viewHead("Brand discovery", "Questionnaire",
+        return viewHead(C.questionnaire.label || "Brand discovery", "Questionnaire",
           "The foundation for everything we make. " + m.qCount + " questions, about " + C.questionnaire.minutes + " minutes, and it saves as you go.") +
           '<div class="qcard"><div class="qcard__meter"><span class="qcard__bar" style="--p:' + (m.qStarted ? p.toFixed(3) : 0) + '"><i></i></span>' +
           (m.qStarted ? m.qAnswered + " of " + m.qCount + " answered" : "Not started") + "</div>" +
@@ -417,7 +425,7 @@
 
     directions: {
       label: "Directions", icon: "directions",
-      visible: function (m) { return m.reviewOpen; },
+      visible: function (m) { return !!C.review && m.reviewOpen; },
       state: function (m) { return m.decision ? { text: "Decided" } : { action: true, text: "Your pick" }; },
       render: renderDirections
     },
@@ -433,7 +441,10 @@
     payments: {
       label: "Payments", icon: "payments",
       state: function (m) {
-        return m.paidInFull ? { text: "Paid" } : m.payDue && m.pay.indexOf(m.payDue) > 0 ? { action: true, text: "Due now" } : { text: "Advance paid" };
+        if (m.paidInFull) return { text: "Paid" };
+        if (m.payDue && m.payDue.invoiced) return { text: "Invoice sent" };
+        if (m.payDue && (m.pay.indexOf(m.payDue) > 0 || !C.payments.bank)) return { action: true, text: "Due now" };
+        return { text: C.payments.paidLabel || "Advance paid" };
       },
       render: renderPayments
     },
@@ -605,6 +616,7 @@
     var rows = m.pay.map(function (p) {
       var sub = p.trigger + (p.dueOn && !p.paid ? ", planned " + short(p.dueOn) : "");
       var state = p.paid ? '<span class="p-chip">Paid ' + short(p.paidOn) + "</span>"
+        : p.invoiced ? '<span class="p-chip">Invoice sent ' + short(p.invoicedOn) + "</span>"
         : p.due ? '<span class="p-chip is-action">Due now</span>' : '<span class="p-chip">Not due yet</span>';
       return '<div class="ledger__row"><span><span class="ledger__label">' + esc(p.label) + '</span><span class="ledger__sub">' + esc(sub) + "</span></span>" +
         '<span class="ledger__amt">' + money(p.amount) + '</span><span class="ledger__state">' + state + "</span></div>";
@@ -612,13 +624,16 @@
     var total = '<div class="ledger__row is-total"><span><span class="ledger__label">Total</span><span class="ledger__sub">' +
       esc(C.project.package + " · " + P.note) + '</span></span><span class="ledger__amt">' + money(P.total) + '</span><span class="ledger__state"></span></div>';
     var B = P.bank;
+    /* a client who pays by invoice gets told where the invoice is, and
+       never sees a bank account */
     var bank = m.paidInFull ? '<p class="p-note">Paid in full. Thank you.</p>' :
+      !B ? (P.how ? '<section><p class="p-sub">' + esc(P.how.title) + '</p><p class="p-lede" style="margin:0">' + esc(P.how.text) + "</p></section>" : "") :
       '<section><p class="p-sub">Pay by bank transfer</p><dl class="bank">' +
       "<div><dt>Account holder</dt><dd>" + esc(B.holder) + "</dd></div>" +
       "<div><dt>IBAN</dt><dd>" + esc(B.iban) + "<small>" + esc(B.ibanNote) + "</small></dd></div>" +
       "<div><dt>Reference</dt><dd>" + esc(B.reference) + '<button class="copy" type="button" data-action="copy" data-copy="' + esc(B.reference) + '">Copy</button></dd></div>' +
       "</dl></section>";
-    return viewHead("Invoice", "Payments", "Two payments, both shown here from day one: half to start, half when everything is delivered.") +
+    return viewHead("Invoice", "Payments", P.lede || "Two payments, both shown here from day one: half to start, half when everything is delivered.") +
       '<div class="ledger">' + rows + total + "</div>" + bank;
   }
 
@@ -626,10 +641,12 @@
     var list = m.calls.map(function (c) {
       var dt = c.localOnly ? '<span class="call__date"><span class="call__mon">Booked</span></span>'
         : '<span class="call__date"><span class="call__day">' + date(c.on).getDate() + '</span><span class="call__mon">' + F_MON.format(date(c.on)) + "</span></span>";
-      var body = '<div><p class="call__name">' + esc(c.name) + (c.localOnly ? "" : ' <span class="call__time">· ' + (day(c.on) === m.t ? "Today, " : "") + clock(c.on) + "</span>") + "</p>";
+      var body = '<div><p class="call__name">' + esc(c.name) + (c.localOnly ? "" : hasClock(c.on) ? ' <span class="call__time">· ' + (day(c.on) === m.t ? "Today, " : "") + clock(c.on) + "</span>"
+        : day(c.on) === m.t ? ' <span class="call__time">· Today</span>' : "") + "</p>";
       body += c.past
-        ? '<ul class="call__agreed">' + c.agreed.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("") + "</ul>"
-        : '<p class="p-note" style="margin-top:0.4rem">The invite is in your inbox. What we agree lands here after the call.</p>';
+        ? ((c.agreed || []).length ? '<ul class="call__agreed">' + c.agreed.map(function (a) { return "<li>" + esc(a) + "</li>"; }).join("") + "</ul>"
+          : '<p class="p-note" style="margin-top:0.4rem">What we agreed is being written up.</p>')
+        : '<p class="p-note" style="margin-top:0.4rem">' + esc(c.note || "The invite is in your inbox. What we agree lands here after the call.") + "</p>";
       body += "</div>";
       if (c.deck) sets["deck-" + c.id] = c.deck.map(function (s) { return { src: s, alt: c.name, tone: "dark" }; });
       var side = c.past && c.deck ? '<button class="p-link" type="button" data-action="zoom" data-set="deck-' + c.id + '" data-i="0">See the deck' + I.right + "</button>"
@@ -639,7 +656,7 @@
     return viewHead("Meeting room", "Calls",
       "Check-ins, questions, or to think something through: thirty minutes, any slot. After each call, what we agreed is written down here.",
       cta("Book a call", "book")) +
-      (list ? '<div class="calls">' + list + "</div>" : '<p class="p-note">No calls yet. Your kickoff is the first one.</p>');
+      (list ? '<div class="calls">' + list + "</div>" : '<p class="p-note">No calls yet.' + (m.hasKickoff ? " Your kickoff is the first one." : "") + "</p>");
   }
 
   function asks() {
@@ -919,7 +936,7 @@
     if (qi === 0) {
       html = '<div class="qs qs--center"><img class="qs__hosy" src="' + HOSY + 'happy.png" alt="">' +
         '<h2 class="qs__big" id="qf-q">Tell us about ' + esc(C.name) + ".</h2>" +
-        '<p class="qs__sub">' + n + " questions, about " + C.questionnaire.minutes + " minutes. We've filled in what we already know. " +
+        '<p class="qs__sub">' + n + " questions, about " + C.questionnaire.minutes + " minutes. " + (Q.some(function (q) { return q.prefill != null; }) ? "We've filled in what we already know. " : "") +
         "Everything saves as you go, so you can stop any time.</p>" +
         cta("Let's go", "q-next", true) + "</div>";
       foot.hidden = true;
@@ -946,9 +963,11 @@
       var lead = C.project.team[0] ? C.project.team[0].name : "The team";
       html = '<div class="qs qs--center"><img class="qs__hosy" src="' + HOSY + 'celebrating.png" alt="">' +
         '<h2 class="qs__big" id="qf-q">Sent. Thank you.</h2>' +
-        '<p class="qs__sub">' + esc(lead) + " reads every answer before your kickoff call. The more honest you were, the sharper the work.</p>" +
+        '<p class="qs__sub">' + esc(lead) + " reads every answer before " +
+        (M.hasKickoff ? "your kickoff call" : M.nextCall ? "your " + esc(M.nextCall.name.toLowerCase()) + " on " + nice(M.nextCall.on) : "the next step") +
+        ". The more honest you were, the sharper the work.</p>" +
         '<div class="row-actions" style="justify-content:center">' +
-        (M.kickoffBooked ? cta("Back to your space", "q-close", true) : cta("Book the kickoff call", "q-book", true) + link("Back to your space", "q-close")) +
+        (M.kickoffBooked || !M.hasKickoff ? cta("Back to your space", "q-close", true) : cta("Book the kickoff call", "q-book", true) + link("Back to your space", "q-close")) +
         "</div></div>";
       foot.hidden = true;
     }

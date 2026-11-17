@@ -88,7 +88,19 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   the output into the SQL Editor. Re-running it updates the record and keeps their answers.
   Their files go in Storage > client-files > `<id>/`, with the same names the record uses
   (`files/<id>/logo.png` in the record is `<id>/logo.png` in the bucket).
-- **What they answered:** the `state` column of their row.
+- **A website build instead of a branding job** (since 17 Nov 2026): start from
+  `portal/data/demo.js`, not `crude.js`. Leave out `review`, `directions` and any call
+  marked `kickoff`, and the space drops the Directions screen and the kickoff step. Give
+  `payments` a `how` (title and text) instead of `bank` and no bank account is shown; an item
+  with `invoicedOn` reads "Invoice sent" until it has a `paidOn`. A call's `on` can be a day
+  with no time. `portal/data/demo.js` is a made-up client of that shape for testing.
+- **What they answered:** the `state` column of their row. The team's "All clients" list also
+  says "Questionnaire sent" with the day, next to each client who has sent theirs.
+- **If nobody can log in:** the free project has probably paused. `curl` the project URL: if the
+  address does not resolve, open supabase.com/dashboard, `hs-client-space`, Restore project.
+  It paused on about 13 Oct 2026 with the old twice-a-week job running and stayed down a month;
+  the job now runs four times a day. Its failure emails go to the repo owner's Gmail (Updates
+  tab), which is where the October ones sat unread.
 
 ## How access works
 
@@ -100,6 +112,11 @@ may open.
 
 **Checks** (`portal-setup/tests`, `npm install` once, then `npm test` with the site running on
 localhost:5173):
+- `node web.test.mjs`: 60 checks that walk the made-up website-build client through every
+  screen and the whole questionnaire, in Chromium and in WebKit at desktop and phone size, plus
+  a run against the pre-website code that must fail.
+- `node live-probe.mjs` (see its header): logs in to the REAL project as an existing client and
+  tries to reach other clients' rows and files. Read-only unless told otherwise.
 - `npm run db`: 28 checks on a real Postgres (PGlite) with stand-ins for Supabase's auth and
   storage, plus three deliberately broken versions of the rules that must each be caught.
 - `npm run browser`: 19 checks in Chromium across test mode, the closed real site, and live mode

@@ -1,12 +1,21 @@
 name: Keep the client space database awake
 
-# Supabase pauses a free project after a week with no activity, and a
-# paused project means no client can log in. This calls it twice a week.
-# Until portal/config.js holds a Supabase URL and key it does nothing.
+# Supabase pauses a free project after a week of too little database
+# activity, and a paused project means no client can log in. Supabase's
+# own guide says it takes a few requests a day, so this runs four times a
+# day and makes three real requests each time. (Twice a week was not
+# enough: the project paused on about 13 Oct 2026 and stayed down a month.)
+#
+# If this fails, the client space is probably DOWN. GitHub emails the
+# failure to the repo owner. Restore: supabase.com/dashboard, open
+# hs-client-space, Restore project.
+#
+# GitHub switches scheduled jobs off in a public repo after 60 days with
+# no commits. It emails first; pushing any commit keeps it going.
 
 on:
   schedule:
-    - cron: "17 9 * * 1,4"
+    - cron: "17 */6 * * *"
   workflow_dispatch:
 
 jobs:
@@ -25,5 +34,13 @@ jobs:
             echo "Not connected yet, nothing to keep awake."
             exit 0
           fi
-          curl -fsS -X POST "$URL/rest/v1/rpc/ping" \
-            -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+          # the database, through a function that reads a real table
+          for i in 1 2 3; do
+            curl -fsS --retry 3 --retry-delay 5 -X POST "$URL/rest/v1/rpc/ping" \
+              -H "apikey: $KEY" -H "Content-Type: application/json" -d '{}'
+            echo
+            sleep 2
+          done
+          # and the login service, which clients need just as much
+          curl -fsS --retry 3 --retry-delay 5 -o /dev/null "$URL/auth/v1/settings" -H "apikey: $KEY"
+          echo "awake"

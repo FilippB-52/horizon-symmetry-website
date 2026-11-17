@@ -125,14 +125,16 @@ create policy "client or team can read files" on storage.objects
   using (bucket_id = 'client-files' and public.can_open((storage.foldername(name))[1]));
 
 -- ---------------------------------------------------------------- awake
--- A free Supabase project pauses after a week with nothing happening,
--- and a paused project means nobody can log in. The scheduled job in
--- .github/workflows/keep-supabase-awake.yml calls this twice a week.
--- It reads nothing and returns 1.
+-- A free Supabase project pauses after a week of too little database
+-- activity, and a paused project means nobody can log in. The scheduled
+-- job in .github/workflows/keep-supabase-awake.yml calls this four times
+-- a day. It does a real read of the clients table (twice a week of
+-- "select 1" was not enough: the project paused in October 2026 with the
+-- job still running) and always returns 1, so it tells a stranger nothing.
 
 create or replace function public.ping() returns integer
-language sql stable set search_path = ''
-as $$ select 1 $$;
+language sql stable security definer set search_path = ''
+as $$ select 1 from (select count(*) from public.clients) c $$;
 grant execute on function public.ping() to anon, authenticated;
 
 -- ---------------------------------------------------------------- the team

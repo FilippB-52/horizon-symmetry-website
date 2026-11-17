@@ -21,7 +21,7 @@
   var gate = document.getElementById("gate");
   var STUDIO = "horizonsymmetrystudio@gmail.com";
   var MAIL = '<a href="mailto:' + STUDIO + '">' + STUDIO + "</a>";
-  var PORTAL_JS = "../js/portal.js?v=202609291505";
+  var PORTAL_JS = "../js/portal.js?v=202611171400";
 
   if (!A || A.mode === "off") { location.replace("login"); return; }
 
@@ -64,13 +64,20 @@
     });
   }
 
+  /* "2026-11-17" as "17 Nov", for the team's list */
+  function sentDay(iso) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? +m[3] + " " + ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1] : "";
+  }
+
   function picker(list, team) {
     screen({
       title: team ? "All clients" : "Your projects",
       body: '<ul class="gate__list">' + list.map(function (c) {
         /* the team opens a space with the stage switcher on (portal.js
            also checks it is the team before showing it) */
-        return '<li><a href="space?c=' + encodeURIComponent(c.id) + (team ? '&preview' : '') + '"><span>' + esc(c.name) + '</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/></svg></a></li>';
+        return '<li><a href="space?c=' + encodeURIComponent(c.id) + (team ? '&preview' : '') + '"><span>' + esc(c.name) +
+          (team && c.sent ? '<small>Questionnaire sent ' + esc(sentDay(c.sent)) + '</small>' : '') + '</span><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 10h13M11 4.5 16.5 10 11 15.5"/></svg></a></li>';
       }).join("") + "</ul>"
     });
   }

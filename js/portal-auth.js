@@ -196,7 +196,7 @@
           .then(function (r) { return !r.error && r.data === true; }, function () { return false; });
       },
       spaces: function () {
-        return client().then(function (c) { return c.from("clients").select("id, name").order("name"); })
+        return client().then(function (c) { return c.from("clients").select("id, name, sent:state->>qSentOn").order("name"); })
           .then(function (r) { if (r.error) throw r.error; return r.data || []; });
       },
       space: function (id) {
@@ -230,7 +230,10 @@
 
     /* Which pretend account may open which example client. Mirrors the
        `emails` column and the team_members table in the real database. */
-    var CLIENTS = [{ id: "crude", emails: ["client@test.hs"] }];
+    var CLIENTS = [
+      { id: "crude", emails: ["client@test.hs"] },       /* a branding project */
+      { id: "demo", emails: ["web@test.hs"] }            /* a website build */
+    ];
     var TEAM = ["team@test.hs"];
 
     function read(k, d) { try { return JSON.parse(localStorage.getItem(k)) || d; } catch (e) { return d; } }
@@ -240,6 +243,7 @@
       var a = read(ACC, {});
       if (!a["client@test.hs"]) a["client@test.hs"] = { name: "Test client", pw: PW, ok: true };
       if (!a["team@test.hs"]) a["team@test.hs"] = { name: "Filipp", pw: PW, ok: true };
+      if (!a["web@test.hs"]) a["web@test.hs"] = { name: "Test web client", pw: PW, ok: true };
       return a;
     }
     function me() {
