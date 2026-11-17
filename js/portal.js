@@ -183,7 +183,9 @@
     });
     m.ready = m.deliverables.filter(function (x) { return x.status === "ready"; }).length;
 
-    m.pay = C.payments.items.map(function (p) {
+    /* a space made before the price was agreed has nothing to show yet */
+    var HAS_PAY = !!(C.payments && C.payments.total > 0);
+    m.pay = (HAS_PAY ? C.payments.items : []).map(function (p) {
       var paid = !!p.paidOn && day(p.paidOn) <= t;
       var due = !paid && (!p.dueOn || day(p.dueOn) <= t);
       var invoiced = !paid && !!p.invoicedOn && day(p.invoicedOn) <= t;
@@ -440,6 +442,7 @@
 
     payments: {
       label: "Payments", icon: "payments",
+      visible: function () { return !!(C.payments && C.payments.total > 0); },
       state: function (m) {
         if (m.paidInFull) return { text: "Paid" };
         if (m.payDue && m.payDue.invoiced) return { text: "Invoice sent" };

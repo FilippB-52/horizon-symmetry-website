@@ -21,6 +21,8 @@ const U = {
   other: "22222222-2222-2222-2222-222222222222",  // linked to other, confirmed
   team: "33333333-3333-3333-3333-333333333333",   // in team_members
   squat: "44444444-4444-4444-4444-444444444444",  // signed up with crude's email, never confirmed
+  newbie: "55555555-5555-5555-5555-555555555555", // signed up, confirmed, linked to nothing yet
+  late: "66666666-6666-6666-6666-666666666666",   // signed up, never opened the confirmation email
 };
 
 const STAND_INS = `
@@ -31,7 +33,9 @@ const STAND_INS = `
 
   create schema auth;
   grant usage on schema auth to anon, authenticated;
-  create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz);
+  create table auth.users (id uuid primary key, email text, email_confirmed_at timestamptz,
+    created_at timestamptz default now(), raw_user_meta_data jsonb default '{}');
+  grant select, update on auth.users to service_role;
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
 
@@ -62,6 +66,9 @@ const SEED = `
     ('${U.other}',  'someone@other.test', now()),
     ('${U.team}',   'team@hs.test', now()),
     ('${U.squat}',  'client@crude.test', null);
+  insert into auth.users (id, email, email_confirmed_at, raw_user_meta_data) values
+    ('${U.newbie}', 'new@person.test', now(), '{"full_name": "New Person"}'),
+    ('${U.late}',   'late@person.test', null, '{"full_name": "Late Person"}');
   insert into public.team_members values ('team@hs.test');
   insert into public.clients (id, name, emails, record) values
     ('crude', 'Crude', array['client@crude.test'], '{"price": 775}'),
@@ -122,6 +129,29 @@ const CHECKS = [
   ["logged-out visitor can't ask is_team", "anon", "select public.is_team()", denied],
   ["logged-out keep-awake ping answers", "anon", "select public.ping() as p", r => r.rows?.[0]?.p === 1],
 
+  // ---- the studio's side: who is waiting, and letting them in
+  ["team sees who is waiting, and only them", "team", "select email, name, confirmed from public.waiting_accounts() order by email", r => (r.rows || []).map(x => x.email + ":" + x.confirmed).join(",") === "late@person.test:false,new@person.test:true" && r.rows[1].name === "New Person"],
+  ["team connects a waiting person to a space", "team", "select public.connect_account('crude', 'New@Person.test') as e", r => (r.rows?.[0]?.e || []).join(",") === "client@crude.test,new@person.test"],
+  ["connecting twice does not double the email", "team", "select public.connect_account('crude', 'client@crude.test') as e", r => (r.rows?.[0]?.e || []).join(",") === "client@crude.test"],
+  ["connecting to a space that does not exist says so", "team", "select public.connect_account('nope', 'new@person.test')", r => /no space called nope/.test(r.error || "")],
+  ["connecting something that is not an email is refused", "team", "select public.connect_account('crude', 'not an email')", r => /not an email address/.test(r.error || "")],
+  ["team creates a space for a waiting person", "team", `select public.create_space('fresh', 'Fresh Co', '{"id":"fresh"}', 'new@person.test') as id`, r => r.rows?.[0]?.id === "fresh"],
+  ["a space can't be created over an existing one", "team", `select public.create_space('crude', 'X', '{"id":"crude"}', null)`, r => /duplicate key/.test(r.error || "")],
+  ["team confirms an account that never got the email", "team", "select public.confirm_account('late@person.test') as ok", r => r.rows?.[0]?.ok === true],
+  ["a waiting person sees no space", "newbie", "select id from public.clients", r => rowsIs(r, 0)],
+  ["a waiting person can't see who else is waiting", "newbie", "select * from public.waiting_accounts()", r => rowsIs(r, 0)],
+  ["a waiting person can't connect themselves", "newbie", "select public.connect_account('crude', 'new@person.test')", denied],
+  ["a waiting person can't create a space", "newbie", `select public.create_space('mine', 'Mine', '{}', 'new@person.test')`, denied],
+  ["a client can't see who is waiting", "client", "select * from public.waiting_accounts()", r => rowsIs(r, 0)],
+  ["a client can't connect anyone", "client", "select public.connect_account('other', 'client@crude.test')", denied],
+  ["a client can't create a space", "client", `select public.create_space('mine', 'Mine', '{}', 'client@crude.test')`, denied],
+  ["a client can't confirm an account", "client", "select public.confirm_account('late@person.test')", denied],
+  ["an unconfirmed signup can't confirm itself", "late", "select public.confirm_account('late@person.test')", denied],
+  ["logged-out visitor can't ask who is waiting", "anon", "select * from public.waiting_accounts()", denied],
+  ["logged-out visitor can't connect anyone", "anon", "select public.connect_account('crude', 'x@y.test')", denied],
+  ["logged-out visitor can't create a space", "anon", `select public.create_space('mine', 'Mine', '{}', null)`, denied],
+  ["logged-out visitor can't confirm an account", "anon", "select public.confirm_account('late@person.test')", denied],
+
   // ---- the files
   ["client sees their own files", "client", "select name from storage.objects where bucket_id = 'client-files' order by name", r => names(r) === "crude/fonts/lora.woff2,crude/logo.png"],
   ["client can't see another client's files", "client", "select name from storage.objects where name like 'other/%'", r => rowsIs(r, 0)],
@@ -180,6 +210,30 @@ const SABOTAGE = [
     what: "file rule forgets which bucket it is about",
     sql: swap(SQL, "using (bucket_id = 'client-files' and public.can_open(", "using (public.can_open("),
     mustFail: ["a crude/ folder in another bucket stays hidden"],
+  },
+  {
+    what: "connecting forgets to check it is the team",
+    sql: swap(SQL, `if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  if who is null or lower`, `if who is null or lower`),
+    mustFail: ["a waiting person can't connect themselves", "a client can't connect anyone"],
+  },
+  {
+    what: "creating a space forgets to check it is the team",
+    sql: swap(SQL, `if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  if rec is null`, `if rec is null`),
+    mustFail: ["a waiting person can't create a space", "a client can't create a space"],
+  },
+  {
+    what: "the waiting list forgets to check it is the team",
+    sql: swap(SQL, `  where public.is_team()
+    and u.email is not null`, `  where u.email is not null`),
+    mustFail: ["a waiting person can't see who else is waiting", "a client can't see who is waiting"],
+  },
+  {
+    what: "confirming an account forgets to check it is the team",
+    sql: swap(SQL, `if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  update auth.users set email_confirmed_at`, `update auth.users set email_confirmed_at`),
+    mustFail: ["a client can't confirm an account", "an unconfirmed signup can't confirm itself"],
   },
 ];
 

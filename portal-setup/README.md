@@ -94,6 +94,13 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   `payments` a `how` (title and text) instead of `bank` and no bank account is shown; an item
   with `invoicedOn` reads "Invoice sent" until it has a `paidOn`. A call's `on` can be a day
   with no time. `portal/data/demo.js` is a made-up client of that shape for testing.
+- **Letting a new person in, without this dashboard** (since 17 Nov 2026): log in to the client
+  space with the studio account. Anyone who has signed up and is linked to nothing is listed
+  under "Waiting to be connected". Pick one of the existing spaces and press Connect, or pick
+  "A new space" and fill in the name, what we are making, the first day and the price: that
+  builds a starting record from `js/portal-templates.js` (a website build or a branding project)
+  and links them. "Confirm it for them" is for someone who told us the email never arrived.
+  All of it runs through four functions in `supabase.sql` that refuse anyone who is not the team.
 - **What they answered:** the `state` column of their row. The team's "All clients" list also
   says "Questionnaire sent" with the day, next to each client who has sent theirs.
 - **If nobody can log in:** the free project has probably paused. `curl` the project URL: if the
@@ -115,6 +122,8 @@ localhost:5173):
 - `node web.test.mjs`: 60 checks that walk the made-up website-build client through every
   screen and the whole questionnaire, in Chromium and in WebKit at desktop and phone size, plus
   a run against the pre-website code that must fail.
+- `node studio.test.mjs`: 69 checks on the studio letting people in (connect, new space, confirm),
+  in Chromium and in WebKit at desktop and phone size.
 - `node live-probe.mjs` (see its header): logs in to the REAL project as an existing client and
   tries to reach other clients' rows and files. Read-only unless told otherwise.
 - `npm run db`: 28 checks on a real Postgres (PGlite) with stand-ins for Supabase's auth and

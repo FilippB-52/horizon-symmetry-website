@@ -124,6 +124,82 @@ create policy "client or team can read files" on storage.objects
   for select to authenticated
   using (bucket_id = 'client-files' and public.can_open((storage.foldername(name))[1]));
 
+-- ---------------------------------------------------------------- the studio's side
+-- Someone who signs up and is not linked to a space yet sees "Your account
+-- is ready" and waits. These four functions are what the team's client list
+-- uses to let them in, so nobody has to open this dashboard to do it:
+--   waiting_accounts   who has signed up and is connected to nothing
+--   connect_account    link an email to an existing space
+--   create_space       make a new space (the record is built in the browser
+--                      from the studio's templates) and link an email to it
+--   confirm_account    mark an account's email as confirmed, for someone who
+--                      told us themselves that the email never arrived
+-- Every one of them refuses anyone who is not the team. They are the only
+-- way a browser can change who opens what: the tables stay closed to writes.
+
+create or replace function public.waiting_accounts()
+returns table (email text, name text, signed_up timestamptz, confirmed boolean)
+language sql stable security definer set search_path = ''
+as $$
+  select lower(u.email)::text, coalesce(u.raw_user_meta_data->>'full_name', '')::text,
+         u.created_at, u.email_confirmed_at is not null
+  from auth.users u
+  where public.is_team()
+    and u.email is not null
+    and not exists (select 1 from public.clients c where lower(u.email) = any (c.emails))
+    and not exists (select 1 from public.team_members t where t.email = lower(u.email))
+  order by u.created_at desc
+$$;
+
+create or replace function public.connect_account(space text, who text) returns text[]
+language plpgsql security definer set search_path = ''
+as $$
+declare result text[];
+begin
+  if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  if who is null or lower(trim(who)) !~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then raise exception 'that is not an email address'; end if;
+  update public.clients c
+     set emails = case when lower(trim(who)) = any (c.emails) then c.emails else array_append(c.emails, lower(trim(who))) end
+   where c.id = space
+  returning c.emails into result;
+  if result is null then raise exception 'there is no space called %', space; end if;
+  return result;
+end;
+$$;
+
+create or replace function public.create_space(space text, title text, rec jsonb, who text default null) returns text
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  if rec is null or jsonb_typeof(rec) <> 'object' or pg_column_size(rec) > 400000 then raise exception 'that record is not usable'; end if;
+  if who is not null and lower(trim(who)) !~ '^[^@[:space:]]+@[^@[:space:]]+[.][^@[:space:]]+$' then raise exception 'that is not an email address'; end if;
+  insert into public.clients (id, name, emails, record)
+  values (space, title, case when who is null then '{}'::text[] else array[lower(trim(who))] end, rec);
+  return space;
+end;
+$$;
+
+create or replace function public.confirm_account(who text) returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+begin
+  if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  update auth.users set email_confirmed_at = now()
+   where lower(email) = lower(trim(who)) and email_confirmed_at is null;
+  return found;
+end;
+$$;
+
+revoke all on function public.waiting_accounts() from public, anon;
+revoke all on function public.connect_account(text, text) from public, anon;
+revoke all on function public.create_space(text, text, jsonb, text) from public, anon;
+revoke all on function public.confirm_account(text) from public, anon;
+grant execute on function public.waiting_accounts() to authenticated;
+grant execute on function public.connect_account(text, text) to authenticated;
+grant execute on function public.create_space(text, text, jsonb, text) to authenticated;
+grant execute on function public.confirm_account(text) to authenticated;
+
 -- ---------------------------------------------------------------- awake
 -- A free Supabase project pauses after a week of too little database
 -- activity, and a paused project means nobody can log in. The scheduled

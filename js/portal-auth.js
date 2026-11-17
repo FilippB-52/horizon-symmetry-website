@@ -216,6 +216,25 @@
          the database refuses the same write from anyone else. */
       writeState: function (id, state) {
         return client().then(function (c) { return c.from("clients").update({ state: state }).eq("id", id); });
+      },
+      /* The studio's side: who has signed up and is connected to nothing,
+         and letting them in. The database refuses all four to anyone who
+         is not the team. */
+      waiting: function () {
+        return client().then(function (c) { return c.rpc("waiting_accounts"); })
+          .then(function (r) { if (r.error) throw r.error; return r.data || []; });
+      },
+      connect: function (space, email) {
+        return client().then(function (c) { return c.rpc("connect_account", { space: space, who: email }); })
+          .then(function (r) { if (r.error) throw r.error; });
+      },
+      createSpace: function (id, name, record, email) {
+        return client().then(function (c) { return c.rpc("create_space", { space: id, title: name, rec: record, who: email || null }); })
+          .then(function (r) { if (r.error) throw r.error; });
+      },
+      confirmAccount: function (email) {
+        return client().then(function (c) { return c.rpc("confirm_account", { who: email }); })
+          .then(function (r) { if (r.error) throw r.error; });
       }
     };
   }
@@ -264,12 +283,21 @@
         document.head.appendChild(s);
       });
     }
+    /* spaces made, and people connected, from the team's list */
+    var MADE = "hs:test:made", LINKS = "hs:test:links";
+    function all() {
+      var made = read(MADE, {}), links = read(LINKS, {});
+      return CLIENTS.concat(Object.keys(made).map(function (id) { return { id: id, emails: [], made: made[id] }; }))
+        .map(function (c) { return { id: c.id, made: c.made, emails: c.emails.concat(links[c.id] || []) }; });
+    }
     function mine() {
       var u = me();
       if (!u) return [];
       var team = TEAM.indexOf(u.email) > -1;
-      return CLIENTS.filter(function (c) { return team || c.emails.indexOf(u.email) > -1; });
+      return all().filter(function (c) { return team || c.emails.indexOf(u.email) > -1; });
     }
+    function record(c) { return c.made ? Promise.resolve(JSON.parse(JSON.stringify(c.made))) : loadRecord(c.id); }
+    function teamOnly() { var u = me(); return !!u && TEAM.indexOf(u.email) > -1; }
 
     return {
       testLogins: { client: "client@test.hs", team: "team@test.hs", password: PW },
@@ -313,15 +341,42 @@
       isTeam: function () { var u = me(); return Promise.resolve(!!u && TEAM.indexOf(u.email) > -1); },
       spaces: function () {
         return Promise.all(mine().map(function (c) {
-          return loadRecord(c.id).then(function (r) { return r && { id: c.id, name: r.name }; });
+          return record(c).then(function (r) { return r && { id: c.id, name: r.name }; });
         })).then(function (l) { return l.filter(Boolean); });
       },
       space: function (id) {
-        if (!mine().some(function (c) { return c.id === id; })) return Promise.resolve(null);
-        return loadRecord(id);
+        var c = mine().filter(function (x) { return x.id === id; })[0];
+        return c ? record(c) : Promise.resolve(null);
       },
       /* test mode keeps answers where portal.js already keeps them */
-      writeState: function () { return Promise.resolve(); }
+      writeState: function () { return Promise.resolve(); },
+      waiting: function () {
+        if (!teamOnly()) return later([]);
+        var a = accounts(), linked = [].concat.apply([], all().map(function (c) { return c.emails; }));
+        return later(Object.keys(a).filter(function (e) { return TEAM.indexOf(e) < 0 && linked.indexOf(e) < 0; })
+          .map(function (e) { return { email: e, name: a[e].name, signed_up: null, confirmed: !!a[e].ok }; }));
+      },
+      connect: function (space, email) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        var links = read(LINKS, {});
+        links[space] = (links[space] || []).concat(email);
+        write(LINKS, links);
+        return later();
+      },
+      createSpace: function (id, name, rec, email) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        var made = read(MADE, {});
+        made[id] = rec;
+        write(MADE, made);
+        if (email) { var links = read(LINKS, {}); links[id] = [email]; write(LINKS, links); }
+        return later();
+      },
+      confirmAccount: function (email) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        var a = accounts();
+        if (a[email]) { a[email].ok = true; write(ACC, a); }
+        return later();
+      }
     };
   }
 
@@ -339,7 +394,9 @@
       isTeam: function () { return Promise.resolve(false); },
       spaces: function () { return Promise.resolve([]); },
       space: function () { return Promise.resolve(null); },
-      writeState: function () { return Promise.resolve(); }
+      writeState: function () { return Promise.resolve(); },
+      waiting: function () { return Promise.resolve([]); },
+      connect: no, createSpace: no, confirmAccount: no
     };
   }
 
@@ -376,6 +433,10 @@
     isTeam: impl.isTeam,
     spaces: impl.spaces,
     space: impl.space,
+    waiting: impl.waiting,
+    connect: impl.connect,
+    createSpace: impl.createSpace,
+    confirmAccount: impl.confirmAccount,
     saveState: function (id, state) {
       pending = { id: id, state: JSON.parse(JSON.stringify(state)) };
       clearTimeout(timer);
