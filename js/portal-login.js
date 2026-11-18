@@ -141,6 +141,63 @@
     A.user().then(function (u) { if (u) go(next); }).catch(function () {});
   }
 
+  /* ---------- after signing up: get them in without a detour ----------
+     The email link is often opened somewhere else (the phone, another
+     browser), or we confirm the account for them. Either way this tab is
+     not logged in, and a refresh used to show an empty sign-up form. So
+     the "Check your email" screen keeps trying to log in with the
+     password just typed (held in this tab's memory only, never stored),
+     every 15 seconds and the moment they come back to the tab, and goes
+     straight through once the email is confirmed. A link opened in this
+     same browser is picked up at once. A reload keeps the screen. */
+
+  var SENT = "hs:signup:sent";
+  function sentFor() { try { return sessionStorage.getItem(SENT) || ""; } catch (e) { return ""; } }
+  function rememberSent(v) { try { if (v) sessionStorage.setItem(SENT, v); else sessionStorage.removeItem(SENT); } catch (e) { /* private mode */ } }
+
+  function checkEmail(email, pw, testLink) {
+    rememberSent(email);
+    state({
+      hosy: "excited",
+      title: "Check your email",
+      text: "We've sent a link to <b>" + esc(email) + "</b>. Open it to confirm your email." +
+        (pw ? " This page logs you in by itself once you have, so you can leave it open." : " Then log in here."),
+      actions: pill("login", "Log in") +
+        (testLink ? '<p class="auth__alt"><a href="' + esc(testLink) + '">Open the link (test mode)</a></p>' : "") +
+        '<p class="auth__alt">Opened it on your phone, or somewhere else? Press Log in.</p>' +
+        '<p class="auth__alt">Nothing after a few minutes? Check your spam, or write to us at ' + MAIL + '. ' +
+        '<a href="signup" data-other>Use a different email</a></p>'
+    });
+    var other = $("[data-other]");
+    if (other) other.addEventListener("click", function () { rememberSent(""); });
+
+    var timer = null, busyTry = false, startedAt = Date.now();
+    function through() { clearInterval(timer); rememberSent(""); go(next); }
+    function tryIn() {
+      if (busyTry || document.visibilityState === "hidden") return;
+      if (Date.now() - startedAt > 30 * 60 * 1000) { clearInterval(timer); return; } /* half an hour, then the button */
+      busyTry = true;
+      A.user().then(function (u) {
+        if (u) return through();
+        if (!pw) return;
+        return A.signIn(email, pw).then(function (r) { if (r && !r.error) through(); });
+      }).catch(function () {}).then(function () { busyTry = false; });
+    }
+    timer = setInterval(tryIn, 15000);
+    document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") tryIn(); });
+    addEventListener("focus", tryIn);
+    /* the link opened in another tab of this browser: its login lands in shared storage */
+    addEventListener("storage", function () { A.user().then(function (u) { if (u) through(); }).catch(function () {}); });
+  }
+
+  /* a reload of the "Check your email" screen keeps it, instead of an empty
+     form. Only a reload: coming back to sign up again shows the form. */
+  var nav = (performance.getEntriesByType && performance.getEntriesByType("navigation")[0]) || {};
+  if (PAGE !== "signup" || nav.type === "navigate") rememberSent("");
+  if (PAGE === "signup" && sentFor()) {
+    A.user().then(function (u) { if (!u) checkEmail(sentFor(), ""); }).catch(function () { checkEmail(sentFor(), ""); });
+  }
+
   if (PAGE === "confirm") {
     A.confirm().then(function (r) {
       if (r.error) return expired();
@@ -195,13 +252,7 @@
       A.signUp(val("name"), email, pw).then(function (r) {
         if (r.error) { done(); showErr(r.error); return; }
         if (!r.confirm) return go(next);
-        state({
-          hosy: "excited",
-          title: "Check your email",
-          text: "We've sent a link to <b>" + esc(email) + "</b>. Open it to finish setting up your account.",
-          actions: r.testLink ? pill(r.testLink, "Open the link (test mode)")
-            : '<p class="auth__alt">Nothing after a few minutes? Check your spam, or write to us at ' + MAIL + ".</p>"
-        });
+        checkEmail(email, pw, r.testLink);
       });
     }
 

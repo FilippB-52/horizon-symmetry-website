@@ -91,6 +91,11 @@ client. Connection steps, SQL and everyday tasks: `portal-setup/README.md`.
   `confirm_account` and `remove_account` in `supabase.sql` (team only; `remove_account` refuses
   anyone connected to a space; checks and sabotage runs in `db.test.mjs`). New spaces are built
   in the browser by `js/portal-templates.js`. `studio.test.mjs` walks it.
+- **A new client is never left on a dead screen** (18 Nov 2026). "Check your email" keeps trying
+  to log in with the password just typed (in memory only) every 15 s and when the tab regains
+  focus, and has a Log in button; a refresh keeps that screen (sessionStorage `hs:signup:sent`,
+  cleared on any other login page). "Your account is ready" re-checks every 15 s and opens the
+  project by itself. `flow.test.mjs` walks it.
 - **The free database PAUSED for a month (about 13 Oct to 17 Nov 2026) and nobody noticed.**
   Before telling anyone the client space works, `curl` `rpc/ping`. The keep-awake job now runs
   four times a day and `ping()` reads a real table.

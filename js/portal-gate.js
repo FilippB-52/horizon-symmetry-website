@@ -44,7 +44,8 @@
   }
 
   gate.addEventListener("click", function (e) {
-    if (e.target.closest("[data-signout]")) A.signOut().then(function () { location.replace("login"); });
+    if (e.target.closest("[data-signout]")) { clearInterval(watching); A.signOut().then(function () { location.replace("login"); }); }
+    if (e.target.closest("[data-recheck]")) recheck(true);
   });
 
   function trouble() {
@@ -55,13 +56,35 @@
     });
   }
 
-  function empty() {
+  /* Signed up, but not connected to a project yet. We connect them from
+     the client list, and this screen keeps checking (every 15 seconds,
+     and the moment they come back to the tab), so their project opens
+     here by itself. No refresh, no logging in again. */
+  var watching = null;
+  function empty(note) {
     screen({
       hosy: "zen",
       title: "Your account is ready",
-      text: "Your project will show up here once we've connected it to your email. " +
-        "If you signed up with a different email from the one we've been writing to, tell us at " + MAIL + " and we'll connect it."
+      text: "We're connecting it to your project now. It opens right here by itself as soon as it's ready, so you can leave this page open. " +
+        "Or close it and come back later: horizonsymmetry.com, then Client login.",
+      body: '<p class="gate__alt"><button type="button" data-recheck>Check now</button></p>' +
+        (note ? '<p class="gate__note" role="status">' + note + "</p>" : "") +
+        '<p class="gate__small">Signed up with a different email from the one we\'ve been writing to? Tell us at ' + MAIL + " and we'll connect it.</p>"
     });
+    if (!watching) {
+      watching = setInterval(function () { recheck(false); }, 15000);
+      document.addEventListener("visibilitychange", function () { if (document.visibilityState === "visible") recheck(false); });
+    }
+  }
+  var checking = false;
+  function recheck(said) {
+    if (checking || (!said && document.visibilityState === "hidden")) return;
+    checking = true;
+    A.spaces().then(function (list) {
+      if (list.length) { clearInterval(watching); location.reload(); return; }
+      if (said) empty("Not connected yet. It opens here as soon as it is.");
+    }).catch(function () { if (said) empty("We couldn't check just now. Try again in a minute."); })
+      .then(function () { checking = false; });
   }
 
   /* "2026-11-17" as "17 Nov", for the team's list */

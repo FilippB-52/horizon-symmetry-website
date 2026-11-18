@@ -123,6 +123,10 @@ localhost:5173):
 - `node web.test.mjs`: 60 checks that walk the made-up website-build client through every
   screen and the whole questionnaire, in Chromium and in WebKit at desktop and phone size, plus
   a run against the pre-website code that must fail.
+- `node flow.test.mjs`: 23 checks that a new client gets through without a detour (the
+  "Check your email" tab logs itself in once the email is confirmed anywhere, the waiting screen
+  opens the project by itself once we connect it, a refresh keeps the screen), plus the same walk
+  against the old screens, which must fail.
 - `node studio.test.mjs`: 69 checks on the studio letting people in (connect, new space, confirm),
   in Chromium and in WebKit at desktop and phone size.
 - `node live-probe.mjs` (see its header): logs in to the REAL project as an existing client and
