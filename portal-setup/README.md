@@ -100,7 +100,8 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   "A new space" and fill in the name, what we are making, the first day and the price: that
   builds a starting record from `js/portal-templates.js` (a website build or a branding project)
   and links them. "Confirm it for them" is for someone who told us the email never arrived.
-  All of it runs through four functions in `supabase.sql` that refuse anyone who is not the team.
+  "Remove this sign-up" deletes an account we don't want (tests, mistakes); it refuses anyone
+  connected to a space. All of it runs through five functions in `supabase.sql` that refuse anyone who is not the team.
 - **What they answered:** the `state` column of their row. The team's "All clients" list also
   says "Questionnaire sent" with the day, next to each client who has sent theirs.
 - **If nobody can log in:** the free project has probably paused. `curl` the project URL: if the

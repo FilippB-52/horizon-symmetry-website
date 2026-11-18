@@ -235,6 +235,10 @@
       confirmAccount: function (email) {
         return client().then(function (c) { return c.rpc("confirm_account", { who: email }); })
           .then(function (r) { if (r.error) throw r.error; });
+      },
+      removeAccount: function (email) {
+        return client().then(function (c) { return c.rpc("remove_account", { who: email }); })
+          .then(function (r) { if (r.error) throw r.error; });
       }
     };
   }
@@ -376,6 +380,15 @@
         var a = accounts();
         if (a[email]) { a[email].ok = true; write(ACC, a); }
         return later();
+      },
+      removeAccount: function (email) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        var linked = [].concat.apply([], all().map(function (c) { return c.emails; }));
+        if (TEAM.indexOf(email) > -1 || linked.indexOf(email) > -1) return Promise.reject(new Error("only someone waiting to be connected can be removed"));
+        var a = accounts();
+        delete a[email];
+        write(ACC, a);
+        return later();
       }
     };
   }
@@ -396,7 +409,7 @@
       space: function () { return Promise.resolve(null); },
       writeState: function () { return Promise.resolve(); },
       waiting: function () { return Promise.resolve([]); },
-      connect: no, createSpace: no, confirmAccount: no
+      connect: no, createSpace: no, confirmAccount: no, removeAccount: no
     };
   }
 
@@ -437,6 +450,7 @@
     connect: impl.connect,
     createSpace: impl.createSpace,
     confirmAccount: impl.confirmAccount,
+    removeAccount: impl.removeAccount,
     saveState: function (id, state) {
       pending = { id: id, state: JSON.parse(JSON.stringify(state)) };
       clearTimeout(timer);

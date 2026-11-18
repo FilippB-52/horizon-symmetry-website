@@ -109,7 +109,8 @@
         var when = w.signed_up ? "signed up " + sentDay(String(w.signed_up).slice(0, 10)) : "";
         return '<li class="wait__row" data-i="' + i + '">' +
           '<div class="wait__who"><b>' + esc(w.name || w.email) + "</b><span>" + esc([w.name ? w.email : "", when].filter(Boolean).join(" · ")) + "</span>" +
-          (w.confirmed ? "" : '<span class="wait__warn">Has not opened the confirmation email yet. <button type="button" data-confirm>Confirm it for them</button></span>') + "</div>" +
+          (w.confirmed ? "" : '<span class="wait__warn">Has not opened the confirmation email yet. <button type="button" data-confirm>Confirm it for them</button></span>') +
+          '<button class="wait__remove" type="button" data-remove>Remove this sign-up</button></div>' +
           '<div class="wait__acts"><select class="field" data-space aria-label="Connect ' + esc(w.email) + ' to">' +
           '<option value="">Connect to…</option>' +
           spacesNow.map(function (c) { return '<option value="' + esc(c.id) + '">' + esc(c.name) + "</option>"; }).join("") +
@@ -158,6 +159,18 @@
     if (!row) return;
     var w = waitingNow[+row.dataset.i], msg = row.querySelector(".wait__msg");
     var who = w.name || w.email;
+
+    if (e.target.closest("[data-remove]")) {
+      if (!window.confirm("Remove " + w.email + "?\n\nTheir account is deleted and they can no longer log in. Use this for tests and sign-ups you don't want. They can always sign up again.")) return;
+      msg.textContent = "Removing…";
+      A.removeAccount(w.email).then(function () { return refresh(w.email + " is removed."); })
+        .catch(function (err) {
+          msg.textContent = /schema cache|Could not find|PGRST202/i.test(String(err && (err.message || err.code)))
+            ? "Removing is not switched on yet. It needs the studio tools pasted into the database once."
+            : "That didn't work. Refresh the page and try again.";
+        });
+      return;
+    }
 
     if (e.target.closest("[data-confirm]")) {
       if (!window.confirm("Only do this if " + who + " told you themselves that they signed up with " + w.email + " and the email never arrived.\n\nConfirm their email for them?")) return;

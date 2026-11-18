@@ -109,6 +109,24 @@ async function run(engine, tag, viewport) {
   await page.waitForFunction(() => /Clara Noemail is connected to Clara Brand/.test(document.querySelector("#gate").innerText));
   await logOut();
 
+  // a test sign-up the studio does not want
+  await signUp("Dan Spam", "dan@spam.test", true);
+  await logOut();
+  await logIn("team@test.hs", "test1234");
+  await page.waitForSelector(".wait__list");
+  await page.locator('.wait__row:has-text("Dan Spam") [data-remove]').click();
+  await page.waitForFunction(() => /dan@spam\.test is removed/.test(document.querySelector("#gate").innerText));
+  check(`${tag}: the studio removes an unwanted sign-up`, await page.locator('.wait__row:has-text("Dan Spam")').count() === 0);
+  const kept = await gateText();
+  check(`${tag}: removing one leaves the clients alone`, /Demo Company/.test(kept) && /Fresh & Co/.test(kept) && /Clara Brand/.test(kept), kept);
+  const nope = await page.evaluate(() => window.HSAuth.removeAccount("anna@waiting.test").then(() => "removed", () => "refused"));
+  check(`${tag}: a connected client can't be removed this way`, nope === "refused", nope);
+  await logOut();
+  await page.goto(SITE + "/portal/login");
+  await page.fill("input[type=email]", "dan@spam.test"); await page.fill("input[type=password]", "test-password-1");
+  await page.locator("form button[type=submit]").click(); await settled();
+  check(`${tag}: the removed person can no longer log in`, /don't match/.test(await page.locator("body").innerText()));
+
   // each of them, as themselves
   await logIn("anna@waiting.test", "test-password-1");
   check(`${tag}: Anna logs in and lands in Demo Company`, await spaceName() === "Demo Company", await gateText());
@@ -147,9 +165,10 @@ async function run(engine, tag, viewport) {
   const sneaky = await page.evaluate(async () => {
     const w = await window.HSAuth.waiting();
     const c = await window.HSAuth.connect("crude", "anna@waiting.test").then(() => "let in", () => "refused");
-    return { waiting: w.length, connect: c };
+    const r = await window.HSAuth.removeAccount("clara@noemail.test").then(() => "removed", () => "refused");
+    return { waiting: w.length, connect: c, remove: r };
   });
-  check(`${tag}: a client asking for the waiting list gets nothing, and can't connect herself`, sneaky.waiting === 0 && sneaky.connect === "refused", sneaky);
+  check(`${tag}: a client gets no waiting list, can't connect herself and can't remove anyone`, sneaky.waiting === 0 && sneaky.connect === "refused" && sneaky.remove === "refused", sneaky);
   check(`${tag}: no script errors anywhere`, errors.length === 0, errors);
   await browser.close();
 }

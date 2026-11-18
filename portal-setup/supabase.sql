@@ -134,6 +134,9 @@ create policy "client or team can read files" on storage.objects
 --                      from the studio's templates) and link an email to it
 --   confirm_account    mark an account's email as confirmed, for someone who
 --                      told us themselves that the email never arrived
+--   remove_account     delete a sign-up we don't want (a test, a mistake).
+--                      Only someone connected to no space: a client is never
+--                      removed this way
 -- Every one of them refuses anyone who is not the team. They are the only
 -- way a browser can change who opens what: the tables stay closed to writes.
 
@@ -191,14 +194,33 @@ begin
 end;
 $$;
 
+create or replace function public.remove_account(who text) returns boolean
+language plpgsql security definer set search_path = ''
+as $$
+declare target uuid;
+begin
+  if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  select u.id into target from auth.users u
+   where lower(u.email) = lower(trim(who))
+     and not exists (select 1 from public.clients c where lower(u.email) = any (c.emails))
+     and not exists (select 1 from public.team_members t where t.email = lower(u.email))
+   limit 1;
+  if target is null then raise exception 'only someone waiting to be connected can be removed'; end if;
+  delete from auth.users where id = target;
+  return true;
+end;
+$$;
+
 revoke all on function public.waiting_accounts() from public, anon;
 revoke all on function public.connect_account(text, text) from public, anon;
 revoke all on function public.create_space(text, text, jsonb, text) from public, anon;
 revoke all on function public.confirm_account(text) from public, anon;
+revoke all on function public.remove_account(text) from public, anon;
 grant execute on function public.waiting_accounts() to authenticated;
 grant execute on function public.connect_account(text, text) to authenticated;
 grant execute on function public.create_space(text, text, jsonb, text) to authenticated;
 grant execute on function public.confirm_account(text) to authenticated;
+grant execute on function public.remove_account(text) to authenticated;
 
 -- ---------------------------------------------------------------- awake
 -- A free Supabase project pauses after a week of too little database

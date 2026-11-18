@@ -99,7 +99,10 @@ async function as(db, who, statement) {
     else {
       await db.exec(`set local role authenticated; set local request.jwt.claim.sub = '${U[who]}'`);
     }
-    const r = await db.query(statement);
+    // several statements in a row: all but the last run first, in the same transaction
+    const list = Array.isArray(statement) ? statement : [statement];
+    for (const st of list.slice(0, -1)) await db.query(st);
+    const r = await db.query(list[list.length - 1]);
     return { rows: r.rows, affected: r.affectedRows ?? 0 };
   } catch (e) {
     return { error: e.message };
@@ -151,6 +154,13 @@ const CHECKS = [
   ["logged-out visitor can't connect anyone", "anon", "select public.connect_account('crude', 'x@y.test')", denied],
   ["logged-out visitor can't create a space", "anon", `select public.create_space('mine', 'Mine', '{}', null)`, denied],
   ["logged-out visitor can't confirm an account", "anon", "select public.confirm_account('late@person.test')", denied],
+  ["team removes a waiting sign-up", "team", "select public.remove_account('Late@Person.test') as ok", r => r.rows?.[0]?.ok === true],
+  ["a removed sign-up is gone from the list", "team", ["select public.remove_account('late@person.test')", "select count(*) as listed from public.waiting_accounts() w where w.email = 'late@person.test'"], r => r.rows && +r.rows[0].listed === 0],
+  ["team can't remove a connected client", "team", "select public.remove_account('client@crude.test')", r => /only someone waiting/.test(r.error || "")],
+  ["team can't remove a team member", "team", "select public.remove_account('team@hs.test')", r => /only someone waiting/.test(r.error || "")],
+  ["a client can't remove anyone", "client", "select public.remove_account('new@person.test')", denied],
+  ["a waiting person can't remove anyone", "newbie", "select public.remove_account('late@person.test')", denied],
+  ["logged-out visitor can't remove anyone", "anon", "select public.remove_account('new@person.test')", denied],
 
   // ---- the files
   ["client sees their own files", "client", "select name from storage.objects where bucket_id = 'client-files' order by name", r => names(r) === "crude/fonts/lora.woff2,crude/logo.png"],
@@ -234,6 +244,21 @@ const SABOTAGE = [
     sql: swap(SQL, `if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
   update auth.users set email_confirmed_at`, `update auth.users set email_confirmed_at`),
     mustFail: ["a client can't confirm an account", "an unconfirmed signup can't confirm itself"],
+  },
+  {
+    what: "removing forgets to check it is the team",
+    sql: swap(SQL, `if not public.is_team() then raise exception 'permission denied: the studio only' using errcode = '42501'; end if;
+  select u.id into target`, `select u.id into target`),
+    mustFail: ["a client can't remove anyone", "a waiting person can't remove anyone"],
+  },
+  {
+    what: "removing forgets that connected clients are off limits",
+    sql: swap(SQL, `   where lower(u.email) = lower(trim(who))
+     and not exists (select 1 from public.clients c where lower(u.email) = any (c.emails))
+     and not exists (select 1 from public.team_members t where t.email = lower(u.email))
+   limit 1;`, `   where lower(u.email) = lower(trim(who))
+   limit 1;`),
+    mustFail: ["team can't remove a connected client", "team can't remove a team member"],
   },
 ];
 

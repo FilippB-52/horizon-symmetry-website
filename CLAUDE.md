@@ -87,8 +87,9 @@ client. Connection steps, SQL and everyday tasks: `portal-setup/README.md`.
   `invoicedOn`). `portal.js` reads which from the record: every `C.review` use is guarded.
   `web.test.mjs` walks the website kind; run it after touching `portal.js`.
 - **The team lets people in from the client list** (17 Nov 2026): "Waiting to be connected" in
-  `portal-gate.js`, backed by `waiting_accounts`, `connect_account`, `create_space` and
-  `confirm_account` in `supabase.sql` (team only, 21 checks in `db.test.mjs`). New spaces are built
+  `portal-gate.js`, backed by `waiting_accounts`, `connect_account`, `create_space`,
+  `confirm_account` and `remove_account` in `supabase.sql` (team only; `remove_account` refuses
+  anyone connected to a space; checks and sabotage runs in `db.test.mjs`). New spaces are built
   in the browser by `js/portal-templates.js`. `studio.test.mjs` walks it.
 - **The free database PAUSED for a month (about 13 Oct to 17 Nov 2026) and nobody noticed.**
   Before telling anyone the client space works, `curl` `rpc/ping`. The keep-awake job now runs
