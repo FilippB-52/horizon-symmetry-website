@@ -40,6 +40,27 @@
   function fail(field, message) { return { error: { field: field, message: message } }; }
   var GENERIC = "Something went wrong on our side. Try again in a minute.";
 
+  /* shared items and comments: the columns the space reads */
+  var ITEM_COLS = "id, client_id, section, kind, title, note, url, path, file_name, size, added_by, created_at";
+  var COMMENT_COLS = "id, item_id, client_id, author, author_name, from_team, body, created_at";
+  function missingTable(e) {
+    var code = (e && e.code) || "", msg = (e && e.message) || "";
+    return code === "PGRST205" || code === "42P01" || /schema cache|does not exist/i.test(msg);
+  }
+  function randomId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    var b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    return Array.prototype.map.call(b, function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+  }
+  /* a storage key that survives any file name; the real name is kept
+     in the row and given back on download */
+  function safeName(n) {
+    var s = String(n || "file").normalize("NFKD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|-+$/g, "");
+    return (s || "file").slice(-120);
+  }
+
   /* ================================================================
      live: Supabase
      ================================================================ */
@@ -239,6 +260,81 @@
       removeAccount: function (email) {
         return client().then(function (c) { return c.rpc("remove_account", { who: email }); })
           .then(function (r) { if (r.error) throw r.error; });
+      },
+
+      /* What the team shared in a client's Files view, and the comments
+         on it. Files come back with a 12-hour link that downloads under
+         the file's own name. Before supabase.sql has been run with these
+         tables in it, this answers { missing: true } instead of failing,
+         so the space still opens and the team is told what to do. */
+      shared: function (id) {
+        return client().then(function (c) {
+          return Promise.all([
+            c.from("client_items").select(ITEM_COLS).eq("client_id", id).order("created_at"),
+            c.from("client_comments").select(COMMENT_COLS).eq("client_id", id).order("created_at")
+          ]).then(function (r) {
+            var e = r[0].error || r[1].error;
+            if (e) { if (missingTable(e)) return { missing: true, items: [], comments: [] }; throw e; }
+            var items = r[0].data || [];
+            return Promise.all(items.map(function (x) {
+              if (x.kind !== "file") { x.href = x.url; return null; }
+              return c.storage.from(BUCKET).createSignedUrl(x.path, TTL, { download: x.file_name || true })
+                .then(function (s) { x.href = (s.data && s.data.signedUrl) || ""; }, function () { x.href = ""; });
+            })).then(function () { return { items: items, comments: r[1].data || [] }; });
+          });
+        });
+      },
+      /* team only: the database refuses it to anyone else, and refuses an
+         upload into a folder that is not an existing client's */
+      share: function (id, it) {
+        return client().then(function (c) {
+          var row = { client_id: id, section: it.section, kind: it.kind, title: it.title, note: it.note || "" };
+          var up = Promise.resolve();
+          if (it.kind === "file") {
+            row.path = id + "/shared/" + randomId() + "/" + safeName(it.file.name);
+            row.file_name = it.file.name;
+            row.size = it.file.size;
+            up = c.storage.from(BUCKET).upload(row.path, it.file, { contentType: it.file.type || "application/octet-stream", upsert: false })
+              .then(function (r) { if (r.error) throw r.error; });
+          } else row.url = it.url;
+          return up.then(function () { return c.from("client_items").insert(row).select(ITEM_COLS).single(); })
+            .then(function (r) {
+              if (r.error) {
+                if (row.path) c.storage.from(BUCKET).remove([row.path]);
+                throw r.error;
+              }
+              var x = r.data;
+              if (x.kind !== "file") { x.href = x.url; return x; }
+              return c.storage.from(BUCKET).createSignedUrl(x.path, TTL, { download: x.file_name || true })
+                .then(function (s) { x.href = (s.data && s.data.signedUrl) || ""; return x; });
+            });
+        });
+      },
+      unshare: function (item) {
+        return client().then(function (c) {
+          return c.from("client_items").delete().eq("id", item.id).select("id").then(function (r) {
+            if (r.error) throw r.error;
+            if (!r.data || !r.data.length) throw new Error("not removed");
+            if (item.path) return c.storage.from(BUCKET).remove([item.path]).then(function () {});
+          });
+        });
+      },
+      /* who wrote it, and whether it was the team, the database decides */
+      comment: function (item, body) {
+        return client().then(function (c) {
+          return c.from("client_comments").insert({ item_id: item.id, client_id: item.client_id, body: body }).select(COMMENT_COLS).single();
+        }).then(function (r) { if (r.error) throw r.error; return r.data; });
+      },
+      uncomment: function (cm) {
+        return client().then(function (c) {
+          return c.from("client_comments").delete().eq("id", cm.id).select("id");
+        }).then(function (r) { if (r.error) throw r.error; if (!r.data || !r.data.length) throw new Error("not removed"); });
+      },
+      /* the team's client list: the latest comments across every space */
+      activity: function () {
+        return client().then(function (c) {
+          return c.from("client_comments").select("client_id, from_team, created_at").order("created_at", { ascending: false }).limit(500);
+        }).then(function (r) { return r.error ? [] : r.data || []; }, function () { return []; });
       }
     };
   }
@@ -288,7 +384,7 @@
       });
     }
     /* spaces made, and people connected, from the team's list */
-    var MADE = "hs:test:made", LINKS = "hs:test:links";
+    var MADE = "hs:test:made", LINKS = "hs:test:links", SHARED = "hs:test:shared";
     function all() {
       var made = read(MADE, {}), links = read(LINKS, {});
       return CLIENTS.concat(Object.keys(made).map(function (id) { return { id: id, emails: [], made: made[id] }; }))
@@ -389,6 +485,73 @@
         delete a[email];
         write(ACC, a);
         return later();
+      },
+
+      /* shared items and comments, this browser only. A file is kept as a
+         data address, so only small ones fit (the real bucket takes 50 MB). */
+      shared: function (id) {
+        if (!mine().some(function (c) { return c.id === id; })) return later({ items: [], comments: [] });
+        var d = read(SHARED, { items: [], comments: [] });
+        return later({
+          items: d.items.filter(function (x) { return x.client_id === id; }).map(function (x) { return Object.assign({}, x, { href: x.kind === "file" ? x.data : x.url }); }),
+          comments: d.comments.filter(function (x) { return x.client_id === id; })
+        });
+      },
+      share: function (id, it) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        if (it.kind === "link" && !/^https?:\/\/\S+$/i.test(it.url || "")) return Promise.reject(new Error("check constraint"));
+        var row = { id: randomId(), client_id: id, section: it.section, kind: it.kind, title: it.title, note: it.note || "",
+          url: it.kind === "link" ? it.url : null, path: null, file_name: null, size: null, added_by: me().email, created_at: new Date().toISOString() };
+        var go = Promise.resolve();
+        if (it.kind === "file") {
+          if (it.file.size > 3e6) return Promise.reject(new Error("test mode keeps files up to 3 MB"));
+          row.path = id + "/shared/" + row.id + "/" + safeName(it.file.name);
+          row.file_name = it.file.name;
+          row.size = it.file.size;
+          go = new Promise(function (resolve, reject) {
+            var fr = new FileReader();
+            fr.onload = function () { row.data = fr.result; resolve(); };
+            fr.onerror = reject;
+            fr.readAsDataURL(it.file);
+          });
+        }
+        return go.then(function () {
+          var d = read(SHARED, { items: [], comments: [] });
+          d.items.push(row);
+          write(SHARED, d);
+          return later(Object.assign({}, row, { href: row.kind === "file" ? row.data : row.url }));
+        });
+      },
+      unshare: function (item) {
+        if (!teamOnly()) return Promise.reject(new Error("the studio only"));
+        var d = read(SHARED, { items: [], comments: [] });
+        d.items = d.items.filter(function (x) { return x.id !== item.id; });
+        d.comments = d.comments.filter(function (x) { return x.item_id !== item.id; });
+        write(SHARED, d);
+        return later();
+      },
+      comment: function (item, body) {
+        var u = me(), d = read(SHARED, { items: [], comments: [] });
+        var it = d.items.filter(function (x) { return x.id === item.id; })[0];
+        if (!u || !it || !mine().some(function (c) { return c.id === it.client_id; })) return Promise.reject(new Error("row-level security"));
+        var team = TEAM.indexOf(u.email) > -1;
+        var row = { id: randomId(), item_id: it.id, client_id: it.client_id, author: u.email,
+          author_name: team ? "Horizon Symmetry" : (u.name || u.email.split("@")[0]), from_team: team, body: body, created_at: new Date().toISOString() };
+        d.comments.push(row);
+        write(SHARED, d);
+        return later(row);
+      },
+      uncomment: function (cm) {
+        var u = me(), d = read(SHARED, { items: [], comments: [] });
+        if (!u || (cm.author !== u.email && TEAM.indexOf(u.email) < 0)) return Promise.reject(new Error("not removed"));
+        d.comments = d.comments.filter(function (x) { return x.id !== cm.id; });
+        write(SHARED, d);
+        return later();
+      },
+      activity: function () {
+        if (!teamOnly()) return later([]);
+        return later(read(SHARED, { items: [], comments: [] }).comments.slice().reverse()
+          .map(function (x) { return { client_id: x.client_id, from_team: x.from_team, created_at: x.created_at }; }));
       }
     };
   }
@@ -409,7 +572,10 @@
       space: function () { return Promise.resolve(null); },
       writeState: function () { return Promise.resolve(); },
       waiting: function () { return Promise.resolve([]); },
-      connect: no, createSpace: no, confirmAccount: no, removeAccount: no
+      connect: no, createSpace: no, confirmAccount: no, removeAccount: no,
+      shared: function () { return Promise.resolve({ items: [], comments: [] }); },
+      share: no, unshare: no, comment: no, uncomment: no,
+      activity: function () { return Promise.resolve([]); }
     };
   }
 
@@ -451,6 +617,12 @@
     createSpace: impl.createSpace,
     confirmAccount: impl.confirmAccount,
     removeAccount: impl.removeAccount,
+    shared: impl.shared,
+    share: impl.share,
+    unshare: impl.unshare,
+    comment: impl.comment,
+    uncomment: impl.uncomment,
+    activity: impl.activity,
     saveState: function (id, state) {
       pending = { id: id, state: JSON.parse(JSON.stringify(state)) };
       clearTimeout(timer);

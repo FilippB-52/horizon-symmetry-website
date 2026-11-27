@@ -112,6 +112,9 @@ async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false } = {}) {
       return json(r, [{ id: "crude", name: RECORD.name }]);
     }
     if (p === "/rest/v1/clients" && req.method() === "PATCH") return r.fulfill({ status: 204, headers: cors });
+    /* what the team shared in Files, and a comment on it */
+    if (p === "/rest/v1/client_items" && req.method() === "GET") return json(r, u.searchParams.get("client_id") === "eq.crude" ? SHARED_ITEMS : []);
+    if (p === "/rest/v1/client_comments" && req.method() === "GET") return json(r, u.searchParams.get("client_id") === "eq.crude" ? SHARED_COMMENTS : []);
     if (p === "/storage/v1/object/sign/client-files" && req.method() === "POST") {
       if (storageDown) return json(r, { error: "down" }, 500);
       const { paths } = req.postDataJSON();
@@ -148,11 +151,26 @@ async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false } = {}) {
       return Array.from(document.fonts).filter(f => /^"?Crude/.test(f.family)).map(f => f.status);
     });
     const state = await page.evaluate(() => window.HS_CLIENT && window.HS_CLIENT.state);
-    out = { ...out, imgs, links, waits, fonts, state };
+    await page.waitForSelector(".sh-item", { timeout: 5000 }).catch(() => {});
+    const shared = await page.$$eval(".sh-item", els => els.map(e => ({
+      title: e.querySelector(".file__label")?.textContent || "",
+      href: e.querySelector(".file__get")?.getAttribute("href") || "",
+      note: e.querySelector(".sh-note")?.textContent || "",
+      comments: Array.from(e.querySelectorAll(".sh-c__body")).map(c => c.textContent)
+    })));
+    out = { ...out, imgs, links, waits, fonts, state, shared };
   }
   await ctx.close();
   return out;
 }
+
+const SHARED_ITEMS = [
+  { id: "i-link", client_id: "crude", section: "First build", kind: "link", title: "Brand book", note: "Password: lens2026", url: "https://brand.test/book", path: null, file_name: null, size: null, added_by: "team@hs.test", created_at: "2026-11-27T15:00:00Z" },
+  { id: "i-file", client_id: "crude", section: "First build", kind: "file", title: "Logo files", note: "", url: null, path: "crude/shared/x1/logo.zip", file_name: "Crude - Logo.zip", size: 120000, added_by: "team@hs.test", created_at: "2026-11-27T15:01:00Z" }
+];
+const SHARED_COMMENTS = [
+  { id: "c1", item_id: "i-link", client_id: "crude", author: "team@hs.test", author_name: "Horizon Symmetry", from_team: true, body: "Here is your brand book.", created_at: "2026-11-27T15:02:00Z" }
+];
 
 async function loadedImages(page) {
   // the gallery lazy-loads: scroll the whole view, then measure
@@ -180,6 +198,9 @@ function liveChecks(tag, r) {
   add("a missing download says Uploading shortly", r.waits >= 2, r.waits); // the brand sheet (never had a file) + the missing PDF
   add("the client's fonts load from the bucket", r.fonts.length === 5 && r.fonts.every(s => s === "loaded"), r.fonts);
   add("their answers are left alone", r.state && r.state.note === STATE.note, r.state);
+  const link = (r.shared || []).find(x => /Brand book/.test(x.title)), file = (r.shared || []).find(x => /Logo files/.test(x.title));
+  add("a shared link shows with its note and the team's comment", !!link && link.href === "https://brand.test/book" && link.note === "Password: lens2026" && link.comments[0] === "Here is your brand book.", r.shared);
+  add("a shared file downloads from a signed link under its own name", !!file && file.href.startsWith(SIGNED + "shared/x1/logo.zip") && new URL(file.href).searchParams.get("download") === "Crude - Logo.zip", r.shared);
   add("no request the fake project didn't expect", r.log.unexpected.length === 0, r.log.unexpected);
   return ok;
 }

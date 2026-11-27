@@ -857,6 +857,102 @@ textarea.field { min-height: 7.5rem; }
 .file__get svg { width: 0.9rem; height: 0.9rem; }
 .file__wait { color: var(--ink-faint); font-size: 0.9rem; white-space: nowrap; }
 
+/* ---------- shared with the client: files, links, comments ---------- */
+
+/* the team's add form, above everything else in Files */
+.sh-wait {
+  padding: 1.1rem 1.25rem;
+  border: 1px dashed rgba(230, 196, 250, 0.38);
+  border-radius: 0.9rem;
+  color: var(--ink-dim);
+  font-size: 0.98rem;
+  line-height: 1.6;
+}
+.sh-wait p { margin: 0; }
+.sh-wait strong { color: var(--ink); font-weight: 500; }
+.sh-wait code { color: var(--violet-hot); font-size: 0.92em; }
+
+.sh-add { display: grid; gap: 1rem; }
+.sh-add.is-open { padding: clamp(1.1rem, 2.4vw, 1.6rem); border: 1px solid var(--rule); border-radius: 1rem; background: rgba(255, 255, 255, 0.015); }
+.sh-add.is-open > .p-link { justify-self: start; }
+.sh-form { display: grid; gap: 1.1rem; max-width: 42rem; }
+.sh-kind { display: inline-flex; justify-self: start; padding: 0.25rem; border: 1px solid var(--rule); border-radius: 99px; gap: 0.25rem; }
+.sh-kind button {
+  padding: 0.45rem 1rem;
+  border: 0;
+  border-radius: 99px;
+  background: none;
+  color: var(--ink-dim);
+  font: 500 0.92rem/1.2 var(--body);
+  cursor: pointer;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
+}
+.sh-kind button[aria-checked="true"] { background: var(--violet-hot); color: var(--void); }
+.sh-lbl { display: grid; gap: 0.45rem; color: var(--ink); font-size: 0.98rem; }
+.sh-lbl span { color: var(--ink-faint); font-size: 0.88rem; }
+.sh-lbl .field { padding: 0.75rem 1rem; }
+textarea.field.sh-note-field { min-height: 4.2rem; }
+.sh-file { cursor: pointer; }
+.sh-file::file-selector-button {
+  margin-right: 0.9rem;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid rgba(230, 196, 250, 0.38);
+  border-radius: 99px;
+  background: none;
+  color: var(--violet-hot);
+  font: 500 0.88rem/1.2 var(--body);
+  cursor: pointer;
+}
+.sh-form button[disabled] { opacity: 0.55; pointer-events: none; }
+
+/* what was shared, grouped under its heading */
+.shared { display: grid; gap: clamp(1.75rem, 3vw, 2.5rem); }
+.sh-group { display: grid; }
+.sh-head { margin: 0 0 0.6rem; font-family: var(--body); font-size: clamp(1.1rem, 1.3vw, 1.28rem); font-weight: 500; color: var(--ink); }
+.sh-item { border-top: 1px solid var(--rule); padding-bottom: 1.1rem; }
+.sh-group .sh-item:last-child { border-bottom: 1px solid var(--rule); }
+.sh-item .file { border-bottom: 0; padding-bottom: 0.5rem; }
+.sh-item .file__label { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem 0.7rem; }
+.sh-item .p-chip { padding: 0.18rem 0.55rem; font-size: 0.64rem; }
+.sh-acts { display: inline-flex; align-items: center; gap: 1rem; }
+.sh-x {
+  padding: 0.2rem 0;
+  border: 0;
+  background: none;
+  color: var(--ink-faint);
+  font: 500 0.84rem/1.2 var(--body);
+  cursor: pointer;
+  transition: color 0.3s var(--ease);
+}
+.sh-x:hover { color: var(--ink); }
+.sh-note {
+  margin: 0 0 0.85rem;
+  max-width: 42rem;
+  color: var(--ink-dim);
+  font-size: 0.95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* the conversation under each item */
+.sh-thread { display: grid; gap: 0.6rem; max-width: 42rem; }
+.sh-c { padding: 0.7rem 0.95rem; border-radius: 0.8rem; background: rgba(255, 255, 255, 0.035); }
+.sh-c.is-team { background: rgba(155, 59, 224, 0.1); box-shadow: inset 0 0 0 1px rgba(230, 196, 250, 0.14); }
+.sh-c__who { display: flex; align-items: baseline; gap: 0.6rem; margin: 0 0 0.25rem; color: var(--ink); font-size: 0.88rem; font-weight: 500; }
+.sh-c.is-team .sh-c__who { color: var(--violet-hot); }
+.sh-c__who span { color: var(--ink-faint); font-weight: 400; font-variant-numeric: tabular-nums; }
+.sh-c__who .sh-x { margin-left: auto; font-size: 0.8rem; }
+.sh-c__body { margin: 0; color: var(--ink-dim); font-size: 0.96rem; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+.sh-reply { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 0.6rem; }
+textarea.field.sh-field { min-height: 2.75rem; padding: 0.6rem 0.95rem; font-size: 0.96rem; resize: none; overflow: hidden; }
+.sh-reply .file__get { background: none; font-family: var(--body); cursor: pointer; }
+.sh-reply .file__get[disabled] { opacity: 0.55; pointer-events: none; }
+@media (max-width: 640px) {
+  .sh-item .file { grid-template-columns: minmax(0, 1fr); }
+  .sh-acts { justify-content: space-between; }
+}
+
 /* ---------- payments ------------------------------------------------- */
 
 .ledger { border-top: 1px solid var(--rule); }
@@ -1238,6 +1334,7 @@ body.is-gated .main__head { visibility: hidden; }
   text-decoration: none;
 }
 .gate__list small { display: block; margin-top: 0.15rem; color: var(--ink-dim); font: 400 0.82rem/1.3 var(--body); }
+.gate__list small.gate__waiting { color: var(--violet-hot); }
 .gate__list svg { width: 1rem; height: 1rem; color: var(--ink-faint); transition: transform 0.45s var(--ease-out), color 0.3s var(--ease); }
 .gate__list a:hover svg { transform: translateX(3px); color: var(--ink); }
 

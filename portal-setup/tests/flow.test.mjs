@@ -117,8 +117,8 @@ judge("webkit", await walk(webkit, "webkit"));
 
 // the control: the sign-up and waiting screens as they were
 const OLD = {
-  "portal-login.js": execFileSync("git", ["-C", ROOT, "show", "HEAD:js/portal-login.js"], { encoding: "utf8" }),
-  "portal-gate.js": execFileSync("git", ["-C", ROOT, "show", "HEAD:js/portal-gate.js"], { encoding: "utf8" })
+  "portal-login.js": execFileSync("git", ["-C", ROOT, "show", "b17737d~1:js/portal-login.js"], { encoding: "utf8" }),
+  "portal-gate.js": execFileSync("git", ["-C", ROOT, "show", "b17737d~1:js/portal-gate.js"], { encoding: "utf8" })
 };
 const before = { passed, failed };
 const o = await walk(chromium, "old", OLD).catch(e => ({ crashed: String(e.message).split("\n")[0] }));

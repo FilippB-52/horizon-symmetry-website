@@ -296,7 +296,7 @@
           text: (picked ? "Got your pick: " + esc(pickName("logo", m.decision.logo)) + ", with " + esc(pickName("type", m.decision.type)) + ". " : "") +
             (cur ? "Next update by <strong>" + nice(cur.end) + "</strong>" +
               (lands ? ", when your " + esc(lands.name.toLowerCase()) + " lands in Files." : ".") : ""),
-          actions: m.ready ? link("See what's ready", "#files") : ""
+          actions: m.ready || SH.items.length ? link("See what's ready", "#files") : ""
         };
     }
   }
@@ -335,6 +335,49 @@
   var sets = {};
   var openFolds = null;
   var openPhases = null;
+
+  /* ---------- shared with the client: files, links, comments ---------- */
+
+  /* What the team put in this space from the Files view, and the comments
+     on each item. Loaded after the space opens (HSAuth.shared); the team
+     adds and removes here, client and team both comment. `missing` means
+     the database has not been given these tables yet (supabase.sql). */
+  var TEAM = !!(VIEWER && VIEWER.team);
+  var SH = { loaded: false, missing: false, items: [], comments: [] };
+  var drafts = {};              /* comment text being written, by item id */
+  var shareOpen = false;        /* the team's add form */
+  var shareKind = "file";
+  var busy = false;
+  var F_WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+
+  function sharedOf(id) { return SH.comments.filter(function (c) { return c.item_id === id; }); }
+  /* the client's word is the last one on this item: the team owes a reply */
+  function waitingOnUs(id) {
+    var cs = sharedOf(id);
+    return cs.length && !cs[cs.length - 1].from_team;
+  }
+  function recent(iso) { return (Date.now() - new Date(iso).getTime()) / 864e5 < 3; }
+  function sections() {
+    var seen = {}, out = [];
+    SH.items.forEach(function (x) { if (!seen[x.section]) { seen[x.section] = 1; out.push(x.section); } });
+    return out;
+  }
+  function size(n) {
+    if (n == null) return "";
+    return n < 1e6 ? Math.max(1, Math.round(n / 1e3)) + " KB" : (n / 1e6).toFixed(n < 1e7 ? 1 : 0) + " MB";
+  }
+  function host(u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return "Link"; } }
+
+  function loadShared() {
+    if (!window.HSAuth || !window.HSAuth.shared) return;
+    window.HSAuth.shared(C.id).then(function (r) {
+      SH = { loaded: true, missing: !!r.missing, items: r.items || [], comments: r.comments || [] };
+      render();
+    }, function () {
+      SH.loaded = true;
+      render();
+    });
+  }
 
   var VIEWS = {
     home: {
@@ -435,6 +478,10 @@
     files: {
       label: "Files", icon: "files",
       state: function (m) {
+        if (TEAM && SH.items.some(function (x) { return waitingOnUs(x.id); })) return { action: true, text: "Reply" };
+        if (!TEAM && (SH.items.some(function (x) { return recent(x.created_at); }) ||
+          SH.comments.some(function (c) { return c.from_team && recent(c.created_at); }))) return { action: true, text: "New" };
+        if (SH.items.length) return { text: SH.items.length + " shared" };
         return { text: m.ready === m.deliverables.length ? "All ready" : m.ready + " of " + m.deliverables.length };
       },
       render: renderFiles
@@ -549,9 +596,13 @@
       openFolds = {};
       if (ready.length) openFolds[ready[ready.length - 1].id] = true;
     }
+    var shared = renderShared();
     var head = viewHead("Deliverables", "Files",
-      ready.length ? "Everything we make for you lands here the moment it's done. Preview it, download it, keep it." : "");
+      SH.items.length ? "Everything we share with you lands here, under the stage it belongs to. Open it, download it, and comment under anything: we answer right here."
+        : ready.length ? "Everything we make for you lands here the moment it's done. Preview it, download it, keep it." : "") +
+      (TEAM ? renderShareForm() : "");
 
+    if (!ready.length && shared) return head + shared + (rest.length ? soon(rest) : "");
     if (!ready.length) {
       var first = rest[0];
       return head + '<div class="empty"><img src="' + HOSY + 'zen.png" alt="">' +
@@ -568,7 +619,87 @@
         chip + '<span class="dl__sign" aria-hidden="true"></span></button>' +
         '<div class="dl__wrap" id="dl-' + x.id + '"><div class="dl__inner"><div class="dl__body">' + deliverableBody(x) + "</div></div></div></div>";
     }).join("");
-    return head + '<div class="dl">' + rows + "</div>" + (rest.length ? soon(rest) : "");
+    return head + shared + '<div class="dl">' + rows + "</div>" + (rest.length ? soon(rest) : "");
+  }
+
+  /* The team's form: a file (one or several) or a link, under a heading,
+     with an optional note. Headings already used, and the project's
+     steps, are offered so the files fall into the same stages. */
+  function renderShareForm() {
+    if (SH.missing) {
+      return '<div class="sh-wait"><p><strong>Adding files from here isn\'t switched on yet.</strong> It needs one database update: ' +
+        "paste <code>portal-setup/supabase.sql</code> into Supabase, SQL Editor, and press Run. Nothing else changes.</p></div>";
+    }
+    if (!SH.loaded) return "";
+    var opts = sections().concat(C.steps.map(function (st) { return st.name; }))
+      .filter(function (v, i, a) { return a.indexOf(v) === i; });
+    var lastSection = SH.items.length ? SH.items[SH.items.length - 1].section : "";
+    var file = shareKind === "file";
+    return '<section class="sh-add' + (shareOpen ? " is-open" : "") + '">' +
+      '<button class="p-link" type="button" data-action="share-open" aria-expanded="' + shareOpen + '">' +
+      (shareOpen ? "Close" : "Add a file or link for " + esc(C.name)) + I.right + "</button>" +
+      (shareOpen ? '<form class="sh-form" id="sh-form" novalidate>' +
+        '<div class="sh-kind" role="radiogroup" aria-label="What are you adding">' +
+          '<button type="button" role="radio" data-action="share-kind" data-kind="file" aria-checked="' + file + '">A file</button>' +
+          '<button type="button" role="radio" data-action="share-kind" data-kind="link" aria-checked="' + !file + '">A link</button>' +
+        "</div>" +
+        '<label class="sh-lbl">Heading <span>The stage it belongs to. Items with the same heading sit together.</span>' +
+          '<input class="field" name="section" list="sh-sections" maxlength="80" autocomplete="off" value="' + esc(lastSection) + '" placeholder="e.g. First build"></label>' +
+        '<datalist id="sh-sections">' + opts.map(function (o) { return '<option value="' + esc(o) + '">'; }).join("") + "</datalist>" +
+        (file
+          ? '<label class="sh-lbl">Files <span>One or several, up to 50 MB each.</span><input class="field sh-file" name="file" type="file" multiple></label>' +
+            '<label class="sh-lbl">Title <span>Optional. Leave it empty to use the file name.</span><input class="field" name="title" maxlength="140" autocomplete="off"></label>'
+          : '<label class="sh-lbl">Link <input class="field" name="url" type="url" inputmode="url" autocomplete="off" placeholder="https://"></label>' +
+            '<label class="sh-lbl">Title <input class="field" name="title" maxlength="140" autocomplete="off" placeholder="e.g. Website preview"></label>') +
+        '<label class="sh-lbl">Note <span>Optional. A password, or what to look at.</span><textarea class="field sh-note-field" name="note" rows="2" maxlength="2000"></textarea></label>' +
+        '<div class="row-actions"><button class="cta cta--solid" type="submit"><span class="cta__label">Add to ' + esc(C.name) + "'s files</span>" +
+          '<span class="cta__arrow">' + I.right + '</span></button><span class="p-note" id="sh-msg" aria-live="polite"></span></div>' +
+      "</form>" : "") +
+    "</section>";
+  }
+
+  /* Shared items, newest heading first, each with its comment thread. */
+  function renderShared() {
+    if (!SH.items.length) return "";
+    var groups = [];
+    SH.items.forEach(function (x) {
+      var g = groups.filter(function (q) { return q.name === x.section; })[0];
+      if (!g) groups.push(g = { name: x.section, items: [], last: "" });
+      g.items.push(x);
+      if (x.created_at > g.last) g.last = x.created_at;
+    });
+    groups.sort(function (a, b) { return a.last < b.last ? 1 : -1; });
+    return '<div class="shared">' + groups.map(function (g) {
+      return '<section class="sh-group"><h2 class="sh-head">' + esc(g.name) + "</h2>" +
+        g.items.map(renderItem).join("") + "</section>";
+    }).join("") + "</div>";
+  }
+
+  function renderItem(x) {
+    var meta = (x.kind === "file" ? size(x.size) : host(x.url)) + " · Shared " + F_SHORT.format(new Date(x.created_at));
+    var get = !x.href ? '<span class="file__wait">Not available</span>'
+      : x.kind === "link" ? '<a class="file__get" href="' + esc(x.href) + '" target="_blank" rel="noopener noreferrer">Open' + I.out + "</a>"
+      : '<a class="file__get" href="' + esc(x.href) + '" download="' + esc(x.file_name || "") + '">Download' + I.down + "</a>";
+    var chip = TEAM && waitingOnUs(x.id) ? '<span class="p-chip is-action">Reply</span>'
+      : !TEAM && recent(x.created_at) ? '<span class="p-chip is-new">New</span>' : "";
+    var cs = sharedOf(x.id);
+    return '<article class="sh-item" id="it-' + esc(x.id) + '">' +
+      '<div class="file"><span><span class="file__label">' + esc(x.title) + chip + '</span><span class="file__meta">' + esc(meta) + "</span></span>" +
+        '<span class="sh-acts">' + (TEAM ? '<button class="sh-x" type="button" data-action="unshare" data-id="' + esc(x.id) + '">Remove</button>' : "") + get + "</span></div>" +
+      (x.note ? '<p class="sh-note">' + esc(x.note) + "</p>" : "") +
+      '<div class="sh-thread">' + cs.map(function (c) {
+        var mineC = VIEWER && c.author === VIEWER.email;
+        var who = c.from_team ? "Horizon Symmetry" : mineC ? "You" : (c.author_name || "Client");
+        return '<div class="sh-c' + (c.from_team ? " is-team" : "") + '"><p class="sh-c__who">' + esc(who) +
+          "<span>" + esc(F_WHEN.format(new Date(c.created_at))) + "</span>" +
+          (mineC || TEAM ? '<button class="sh-x" type="button" data-action="uncomment" data-id="' + esc(c.id) + '">Delete</button>' : "") +
+          '</p><p class="sh-c__body">' + esc(c.body) + "</p></div>";
+      }).join("") +
+      '<form class="sh-reply" data-item="' + esc(x.id) + '">' +
+        '<textarea class="field sh-field" rows="1" maxlength="4000" data-draft="' + esc(x.id) + '" aria-label="Comment on ' + esc(x.title) + '" placeholder="' +
+          (TEAM ? (cs.length ? "Reply" : "Add a comment") : cs.length ? "Reply" : "Comment on this") + '">' + esc(drafts[x.id] || "") + "</textarea>" +
+        '<button class="file__get" type="submit">Send</button></form>' +
+      "</div></article>";
   }
 
   function soon(rest) {
@@ -1149,6 +1280,36 @@
       case "sign-out":
         window.HSAuth.signOut().then(function () { location.replace("login"); });
         break;
+      case "share-open":
+        shareOpen = !shareOpen;
+        render();
+        if (shareOpen) { var f1 = $("#sh-form [name=section]"); if (f1) f1.focus(); }
+        break;
+      case "share-kind":
+        shareKind = a.dataset.kind;
+        render();
+        break;
+      case "unshare":
+        var ux = SH.items.filter(function (x) { return x.id === a.dataset.id; })[0];
+        if (!ux || busy) return;
+        if (!confirm('Remove "' + ux.title + '" from ' + C.name + "'s files? Its comments go with it.")) return;
+        busy = true;
+        window.HSAuth.unshare(ux).then(function () {
+          SH.items = SH.items.filter(function (x) { return x.id !== ux.id; });
+          SH.comments = SH.comments.filter(function (c) { return c.item_id !== ux.id; });
+          render();
+          toast("Removed.");
+        }, function () { toast("That didn't work. Refresh and try again."); }).then(function () { busy = false; });
+        break;
+      case "uncomment":
+        var uc = SH.comments.filter(function (c) { return c.id === a.dataset.id; })[0];
+        if (!uc || busy || !confirm("Delete this comment?")) return;
+        busy = true;
+        window.HSAuth.uncomment(uc).then(function () {
+          SH.comments = SH.comments.filter(function (c) { return c.id !== uc.id; });
+          render();
+        }, function () { toast("That didn't work. Refresh and try again."); }).then(function () { busy = false; });
+        break;
       case "stage-reset":
         try { localStorage.removeItem(KEY); } catch (err) { /* nothing to forget */ }
         local = { answers: {} };
@@ -1182,6 +1343,91 @@
       local.draftPick = local.draftPick || {};
       local.draftPick.note = el.value;
       save();
+    }
+  });
+
+  /* the team's add form, and every comment box */
+  document.addEventListener("submit", function (e) {
+    var f = e.target;
+    if (f.id === "sh-form") { e.preventDefault(); addShared(f); }
+    else if (f.classList.contains("sh-reply")) { e.preventDefault(); sendComment(f); }
+  });
+
+  function addShared(f) {
+    if (busy) return;
+    var msg = $("#sh-msg");
+    var section = f.section.value.trim(), note = f.note.value.trim(), title = f.title.value.trim();
+    var say = function (t) { msg.textContent = t; };
+    if (!section) { f.section.focus(); return say("Give it a heading first."); }
+    var jobs;
+    if (shareKind === "link") {
+      var url = f.url.value.trim();
+      if (url && !/^https?:\/\//i.test(url)) url = "https://" + url;
+      if (!/^https?:\/\/[^\s]+\.[^\s]+$/i.test(url)) { f.url.focus(); return say("That doesn't look like a link."); }
+      if (!title) { f.title.focus(); return say("Give the link a title."); }
+      jobs = [{ section: section, kind: "link", url: url, title: title, note: note }];
+    } else {
+      var files = Array.prototype.slice.call(f.file.files || []);
+      if (!files.length) { f.file.focus(); return say("Pick a file first."); }
+      var big = files.filter(function (x) { return x.size > 50e6; })[0];
+      if (big) return say(big.name + " is over 50 MB. Share it as a link instead.");
+      jobs = files.map(function (x) {
+        return { section: section, kind: "file", file: x, note: note, title: files.length === 1 && title ? title : x.name.replace(/\.[^.]+$/, "") };
+      });
+    }
+    busy = true;
+    var btn = f.querySelector("button[type=submit]");
+    btn.disabled = true;
+    say(jobs.length > 1 ? "Uploading " + jobs.length + " files…" : jobs[0].kind === "file" ? "Uploading…" : "Adding…");
+    var added = 0;
+    jobs.reduce(function (p, job) {
+      return p.then(function () {
+        return window.HSAuth.share(C.id, job).then(function (x) { SH.items.push(x); added++; });
+      });
+    }, Promise.resolve()).then(function () {
+      shareOpen = false;
+      render();
+      toast(added === 1 ? "Added. " + C.name + " sees it now." : added + " added. " + C.name + " sees them now.");
+    }, function () {
+      render();
+      var m2 = $("#sh-msg");
+      if (m2) m2.textContent = (added ? added + " added, then one failed. " : "That didn't go through. ") + "Check the file or link and try again.";
+    }).then(function () { busy = false; });
+  }
+
+  function sendComment(f) {
+    var id = f.dataset.item, box = f.querySelector("textarea"), body = box.value.trim();
+    var it = SH.items.filter(function (x) { return x.id === id; })[0];
+    if (!it || busy) return;
+    if (!body) { box.focus(); return; }
+    busy = true;
+    var btn = f.querySelector("button");
+    btn.disabled = true;
+    window.HSAuth.comment(it, body).then(function (c) {
+      SH.comments.push(c);
+      delete drafts[id];
+      render();
+      toast(TEAM ? "Sent." : "Sent. We'll answer here.");
+    }, function () {
+      btn.disabled = false;
+      toast("That didn't send. Try again.");
+    }).then(function () { busy = false; });
+  }
+
+  document.addEventListener("input", function (e) {
+    var el = e.target;
+    if (el.dataset && el.dataset.draft) {
+      drafts[el.dataset.draft] = el.value;
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + 2 + "px";
+    }
+  });
+
+  document.addEventListener("keydown", function (e) {
+    /* Cmd or Ctrl + Enter sends a comment */
+    if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && e.target.dataset && e.target.dataset.draft) {
+      e.preventDefault();
+      sendComment(e.target.form);
     }
   });
 
@@ -1220,4 +1466,5 @@
 
   $("#main-name").textContent = C.name;
   render(true);
+  loadShared();
 })();

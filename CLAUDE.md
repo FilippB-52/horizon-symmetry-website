@@ -91,6 +91,12 @@ client. Connection steps, SQL and everyday tasks: `portal-setup/README.md`.
   `confirm_account` and `remove_account` in `supabase.sql` (team only; `remove_account` refuses
   anyone connected to a space; checks and sabotage runs in `db.test.mjs`). New spaces are built
   in the browser by `js/portal-templates.js`. `studio.test.mjs` walks it.
+- **The team shares files and links from a client's Files view, and both sides comment**
+  (27 Nov 2026). `client_items` and `client_comments` in `supabase.sql`, storage uploads under
+  `client-files/<id>/shared/` (team only); `HSAuth.shared/share/unshare/comment/uncomment/activity`
+  in `portal-auth.js` (live, test and off); `renderShareForm`, `renderShared`, `renderItem` in
+  `portal.js`; the "New comment" line in the client list in `portal-gate.js`. Missing tables
+  answer `{ missing: true }`, never an error. `shared.test.mjs` walks it both sides.
 - **A new client is never left on a dead screen** (18 Nov 2026). "Check your email" keeps trying
   to log in with the password just typed (in memory only) every 15 s and when the tab regains
   focus, and has a Log in button; a refresh keeps that screen (sessionStorage `hs:signup:sent`,

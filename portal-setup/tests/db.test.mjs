@@ -25,6 +25,14 @@ const U = {
   late: "66666666-6666-6666-6666-666666666666",   // signed up, never opened the confirmation email
 };
 
+// what the team has shared, and the comments on it (seeded)
+const I = {
+  crude: "aaaaaaaa-0000-0000-0000-000000000001",
+  other: "aaaaaaaa-0000-0000-0000-000000000002",
+  teamNote: "bbbbbbbb-0000-0000-0000-000000000001",
+  otherNote: "bbbbbbbb-0000-0000-0000-000000000002",
+};
+
 const STAND_INS = `
   create role anon nologin;
   create role authenticated nologin;
@@ -80,6 +88,12 @@ const SEED = `
     ('client-files', 'other/secret.pdf'),
     ('client-files', 'loose.png'),
     ('elsewhere', 'crude/not-ours.png');
+  insert into public.client_items (id, client_id, section, kind, title, url, added_by) values
+    ('${I.crude}', 'crude', 'First build', 'link', 'Site preview', 'https://example.test', 'team@hs.test'),
+    ('${I.other}', 'other', 'First build', 'link', 'Other preview', 'https://other.test', 'team@hs.test');
+  insert into public.client_comments (id, item_id, client_id, author, author_name, from_team, body) values
+    ('${I.teamNote}', '${I.crude}', 'crude', 'team@hs.test', 'Horizon Symmetry', true, 'Here it is'),
+    ('${I.otherNote}', '${I.other}', 'other', 'someone@other.test', 'Someone', false, 'a note only Other may read');
 `;
 
 async function fresh(sql) {
@@ -173,6 +187,33 @@ const CHECKS = [
   ["unconfirmed signup sees no files", "squat", "select name from storage.objects", r => rowsIs(r, 0)],
   ["logged-out visitor sees no files", "anon", "select name from storage.objects", r => rowsIs(r, 0)],
   ["the bucket is private", "client", "select public from storage.buckets where id = 'client-files'", r => r.rows?.[0]?.public === false],
+  ["team uploads into a client's folder", "team", "insert into storage.objects (bucket_id, name) values ('client-files', 'crude/shared/x1/brief.pdf')", r => r.affected === 1],
+  ["team can't upload into a folder that is no client", "team", "insert into storage.objects (bucket_id, name) values ('client-files', 'nobody/x.pdf')", r => /row-level security/.test(r.error || "")],
+  ["team can't upload outside a client folder", "team", "insert into storage.objects (bucket_id, name) values ('client-files', 'loose2.pdf')", r => /row-level security/.test(r.error || "")],
+  ["team removes a file", "team", "delete from storage.objects where name = 'crude/logo.png'", r => r.affected === 1],
+  ["a waiting person can't upload", "newbie", "insert into storage.objects (bucket_id, name) values ('client-files', 'crude/x.pdf')", r => /row-level security/.test(r.error || "")],
+
+  // ---- what the team shares in the Files view, and the comments on it
+  ["client reads what was shared with them", "client", "select title from public.client_items", r => !r.error && r.rows.map(x => x.title).join(",") === "Site preview"],
+  ["client can't read another client's shared items", "client", "select title from public.client_items where client_id = 'other'", r => rowsIs(r, 0)],
+  ["client can't add an item", "client", "insert into public.client_items (client_id, section, kind, title, url) values ('crude', 'X', 'link', 'Mine', 'https://x.test')", r => /row-level security/.test(r.error || "")],
+  ["client can't remove an item", "client", `delete from public.client_items where id = '${I.crude}'`, r => r.affected === 0 && !r.error],
+  ["team adds a link, signed as the team whatever it says", "team", "insert into public.client_items (client_id, section, kind, title, url, added_by) values ('crude', 'First build', 'link', 'Brand book', 'https://brand.test', 'someone@else.test') returning added_by", r => r.rows?.[0]?.added_by === "team@hs.test"],
+  ["team adds a file inside the client's folder", "team", "insert into public.client_items (client_id, section, kind, title, path, file_name, size) values ('crude', 'First build', 'file', 'Logo', 'crude/shared/x1/logo.zip', 'Logo.zip', 1200)", r => r.affected === 1],
+  ["a file can't point into another client's folder", "team", "insert into public.client_items (client_id, section, kind, title, path) values ('crude', 'X', 'file', 'Theirs', 'other/secret.pdf')", r => /check constraint/.test(r.error || "")],
+  ["a link that is not http(s) is refused", "team", "insert into public.client_items (client_id, section, kind, title, url) values ('crude', 'X', 'link', 'Bad', 'javascript:alert(1)')", r => /check constraint/.test(r.error || "")],
+  ["team removes an item", "team", `delete from public.client_items where id = '${I.crude}'`, r => r.affected === 1],
+  ["unconfirmed signup sees nothing shared", "squat", "select title from public.client_items", r => rowsIs(r, 0)],
+  ["logged-out visitor can't read shared items", "anon", "select title from public.client_items", denied],
+  ["client comments, signed as themselves whatever they send", "client", `insert into public.client_comments (item_id, client_id, author, author_name, from_team, body) values ('${I.crude}', 'crude', 'team@hs.test', 'Horizon Symmetry', true, 'Can the logo be bigger?') returning author, from_team, author_name`, r => r.rows?.[0]?.author === "client@crude.test" && r.rows[0].from_team === false && r.rows[0].author_name === "client"],
+  ["a comment lands in its item's space, not the one it names", "client", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'other', 'hi') returning client_id`, r => r.rows?.[0]?.client_id === "crude"],
+  ["client can't comment on another client's item", "client", `insert into public.client_comments (item_id, client_id, body) values ('${I.other}', 'other', 'hi')`, r => /row-level security/.test(r.error || "")],
+  ["client reads only their own space's comments", "client", "select body from public.client_comments", r => !r.error && r.rows.map(x => x.body).join(",") === "Here it is"],
+  ["team's reply is marked as the team", "team", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'Yes, done') returning from_team, author_name`, r => r.rows?.[0]?.from_team === true && r.rows[0].author_name === "Horizon Symmetry"],
+  ["client can't delete the team's comment", "client", `delete from public.client_comments where id = '${I.teamNote}'`, r => r.affected === 0 && !r.error],
+  ["client deletes their own comment", "client", [`insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'oops')`, "delete from public.client_comments where body = 'oops'"], r => r.affected === 1],
+  ["unconfirmed signup can't comment", "squat", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'hi')`, r => /row-level security/.test(r.error || "")],
+  ["logged-out visitor can't comment", "anon", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'hi')`, denied],
 ];
 
 function ids(r) { return (r.rows || []).map(x => x.id).join(","); }
@@ -206,6 +247,37 @@ function swap(sql, from, to) {
   return sql.replace(from, to);
 }
 const SABOTAGE = [
+  {
+    what: "anyone signed in can add to a client's files",
+    sql: swap(SQL, `for insert to authenticated with check (public.is_team());`, `for insert to authenticated with check (true);`),
+    mustFail: ["client can't add an item"],
+  },
+  {
+    what: "shared items readable by every signed-in person",
+    sql: swap(SQL, `for select to authenticated using (public.can_open(client_id));
+drop policy if exists "team adds items"`, `for select to authenticated using (true);
+drop policy if exists "team adds items"`),
+    mustFail: ["client can't read another client's shared items", "unconfirmed signup sees nothing shared"],
+  },
+  {
+    what: "a comment keeps whatever author the browser sends",
+    sql: swap(SQL, `    new.author := me;
+    new.from_team := public.is_team();`, ``),
+    mustFail: ["client comments, signed as themselves whatever they send"],
+  },
+  {
+    what: "a comment trusts the space the browser names",
+    sql: swap(SQL, `  select i.client_id into new.client_id from public.client_items i where i.id = new.item_id;
+`, ``),
+    mustFail: ["a comment lands in its item's space, not the one it names"],
+  },
+  {
+    what: "the upload rule forgets to check it is the team",
+    sql: swap(SQL, `with check (bucket_id = 'client-files' and public.is_team()
+    and (storage`, `with check (bucket_id = 'client-files'
+    and (storage`),
+    mustFail: ["client can't upload"],
+  },
   {
     what: "every signed-in person can read every space",
     sql: swap(SQL, "using (public.my_email() = any (emails) or public.is_team());", "using (true);"),

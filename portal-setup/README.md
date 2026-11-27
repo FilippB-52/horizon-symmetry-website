@@ -102,6 +102,18 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   and links them. "Confirm it for them" is for someone who told us the email never arrived.
   "Remove this sign-up" deletes an account we don't want (tests, mistakes); it refuses anyone
   connected to a space. All of it runs through five functions in `supabase.sql` that refuse anyone who is not the team.
+- **Sharing files and links, and talking about them** (since 27 Nov 2026): log in with the studio
+  account, open the client, Files, "Add a file or link for <client>". Pick a heading (the stage it
+  belongs to; items with the same heading sit together), then a file (several at once, up to
+  50 MB each) or a link with a title, and an optional note (a password, what to look at). The
+  client sees it at once and comments under it; we answer in the same thread. A client comment
+  we have not answered shows "Reply" on the item and in the menu, and "New comment" under their
+  name in All clients. Nobody is emailed about a comment yet (that waits for Resend), so look.
+  Remove takes the item, its file and its comments away. Stored in `client_items` and
+  `client_comments` in `supabase.sql` (team adds and removes; author and "from the team" are set
+  by the database, never the browser); files go to `client-files/<id>/shared/`. Checks:
+  `db.test.mjs` and `shared.test.mjs`. Before that SQL has been run, the team sees a line saying
+  so in Files and clients see nothing new.
 - **What they answered:** the `state` column of their row. The team's "All clients" list also
   says "Questionnaire sent" with the day, next to each client who has sent theirs.
 - **If nobody can log in:** the free project has probably paused. `curl` the project URL: if the
