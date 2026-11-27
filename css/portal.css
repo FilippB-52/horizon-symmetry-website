@@ -859,6 +859,26 @@ textarea.field { min-height: 7.5rem; }
 
 /* ---------- shared with the client: files, links, comments ---------- */
 
+/* the team's switch between the studio view and the client's own view */
+.asbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1.5rem;
+  margin-bottom: clamp(1.5rem, 3vw, 2.25rem);
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--rule);
+  border-radius: 0.8rem;
+  color: var(--ink-dim);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+.asbar p { margin: 0; }
+.asbar strong { color: var(--ink); font-weight: 500; }
+.asbar.is-client { border-color: rgba(230, 196, 250, 0.45); background: rgba(155, 59, 224, 0.08); }
+.asbar.is-client strong { color: var(--violet-hot); }
+
 /* the team's add form, above everything else in Files */
 .sh-wait {
   padding: 1.1rem 1.25rem;

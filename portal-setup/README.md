@@ -114,6 +114,9 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   by the database, never the browser); files go to `client-files/<id>/shared/`. Checks:
   `db.test.mjs` and `shared.test.mjs`. Before that SQL has been run, the team sees a line saying
   so in Files and clients see nothing new.
+- **Seeing exactly what a client sees:** in their space, the bar at the top, "See it as <client> sees it".
+  It hides everything team-only (add, Remove, Reply marks, the stage switcher) and blocks sending
+  while it is on. Kept for that tab only; "Back to the studio view" switches it off.
 - **What they answered:** the `state` column of their row. The team's "All clients" list also
   says "Questionnaire sent" with the day, next to each client who has sent theirs.
 - **If nobody can log in:** the free project has probably paused. `curl` the project URL: if the

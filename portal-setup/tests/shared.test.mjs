@@ -133,6 +133,19 @@ async function walk(engine, tag, { oldCode } = {}) {
     await page.waitForFunction(() => document.querySelectorAll(".sh-item").length === 2, null, { timeout: 6000 }).catch(() => {});
     out.afterRemove = await page.$$eval(".sh-item .file__label", els => els.map(e => e.childNodes[0].textContent));
     await shot("4-team-replied");
+    // the team switches to exactly what the client sees, and back
+    await page.click("[data-action=as-client]");
+    await page.waitForTimeout(300);
+    out.asClient = { add: await page.locator("[data-action=share-open]").count(), remove: await page.locator("[data-action=unshare]").count(),
+      studio: await page.locator(".studio").count(), reply: await page.locator(".sh-item .p-chip.is-action").count(),
+      del: await page.locator(".sh-c [data-action=uncomment]").count(), bar: await page.locator(".asbar").innerText() };
+    await page.reload();
+    await page.waitForFunction(() => document.getElementById("gate")?.hidden === true, null, { timeout: 8000 }).catch(() => {});
+    await page.waitForTimeout(700);
+    out.asClientKept = await page.locator(".asbar.is-client").count();
+    await page.click("[data-action=as-client]");
+    await page.waitForTimeout(300);
+    out.backToStudio = { add: await page.locator("[data-action=share-open]").count(), remove: await page.locator("[data-action=unshare]").count() };
 
     // ---- the client sees the answer, deletes their own comment, can't delete ours
     await page.click("[data-action=sign-out]").catch(() => {});
@@ -165,6 +178,8 @@ function checks(tag, o) {
   check(`${tag}: the team's client list says a comment is waiting`, /New comment/.test(o.listNote || ""), o.listNote);
   check(`${tag}: the team sees Reply in the menu and on the item`, /Files\s*Reply/.test(o.teamNav || "") && o.replyChip === 1, { nav: o.teamNav, chip: o.replyChip });
   check(`${tag}: the team's answer is signed Horizon Symmetry`, /^Horizon Symmetry/.test(o.teamReply || "") && /warming it up/.test(o.teamReply || "") && o.replyChipAfter === 0, { reply: o.teamReply, chip: o.replyChipAfter });
+  check(`${tag}: seen as the client, nothing team-only shows`, !!o.asClient && o.asClient.add === 0 && o.asClient.remove === 0 && o.asClient.studio === 0 && o.asClient.reply === 0 && o.asClient.del === 0 && /exactly what/.test(o.asClient.bar), o.asClient);
+  check(`${tag}: the client view survives a reload, and switches back`, o.asClientKept === 1 && !!o.backToStudio && o.backToStudio.add === 1 && o.backToStudio.remove === 2, { kept: o.asClientKept, back: o.backToStudio });
   check(`${tag}: the team removes a file`, (o.afterRemove || []).join(",") === "Website preview,Brand book v1.1", o.afterRemove);
   check(`${tag}: the client sees the answer and can delete only their own`, (o.clientSees || []).length === 2 && o.clientDeleteButtons === 1, { sees: o.clientSees, del: o.clientDeleteButtons });
   check(`${tag}: their own comment goes, ours stays`, (o.clientAfterDelete || []).length === 1 && /Horizon Symmetry/.test(o.clientAfterDelete[0]), o.clientAfterDelete);
@@ -173,8 +188,8 @@ function checks(tag, o) {
 
 for (const [engine, tag] of [[webkit, "webkit"], [chromium, "chromium"]]) checks(tag, await walk(engine, tag));
 
-// ---- control: the code before sharing existed must fail the team's half
-const OLD = execFileSync("git", ["-C", ROOT, "show", "HEAD:js/portal.js"], { encoding: "utf8" });
+// ---- control: the code before sharing existed (the commit before e32cd7c) must fail the team's half
+const OLD = execFileSync("git", ["-C", ROOT, "show", "e32cd7c~1:js/portal.js"], { encoding: "utf8" });
 const old = await walk(chromium, "old", { oldCode: OLD });
 check("control: the old Files view has no way to share", old.formButton !== 1 && !!old.crashed, { form: old.formButton, crashed: old.crashed });
 

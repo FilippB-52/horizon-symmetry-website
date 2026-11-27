@@ -342,7 +342,21 @@
      on each item. Loaded after the space opens (HSAuth.shared); the team
      adds and removes here, client and team both comment. `missing` means
      the database has not been given these tables yet (supabase.sql). */
-  var TEAM = !!(VIEWER && VIEWER.team);
+  /* The team can switch to exactly what the client sees: no add form, no
+     Remove, no "Reply" marks, no stage switcher. Kept per client for this
+     tab only, so it never sticks on someone by surprise. */
+  var IS_TEAM = !!(VIEWER && VIEWER.team);
+  var AS_KEY = "hs:asClient:" + C.id;
+  var asClient = false;
+  try { asClient = IS_TEAM && sessionStorage.getItem(AS_KEY) === "1"; } catch (e) { /* private mode */ }
+  var TEAM = IS_TEAM && !asClient;
+  function asBar() {
+    if (!IS_TEAM) return "";
+    return '<div class="asbar' + (asClient ? " is-client" : "") + '"><p>' + (asClient
+      ? "<strong>You're seeing exactly what " + esc(C.name) + " sees.</strong> Nothing you click here is sent."
+      : "<strong>Studio view.</strong> You also see what only the team sees: adding and removing files, replies waiting, the stage switcher.") +
+      '</p><button class="p-link" type="button" data-action="as-client">' + (asClient ? "Back to the studio view" : "See it as " + esc(C.name) + " sees it") + I.right + "</button></div>";
+  }
   var SH = { loaded: false, missing: false, items: [], comments: [] };
   var drafts = {};              /* comment text being written, by item id */
   var shareOpen = false;        /* the team's add form */
@@ -557,7 +571,7 @@
         '<div class="pick__body"><span class="pick__name">Body text · ' + esc(ty.name) + '<span class="pick__tick">' + I.check + "</span></span>" +
         '<span class="pick__idea">' + esc(ty.note) + "</span></div></div></div>" +
         /* what they asked us to change, kept in view for them and for us */
-        (m.decision.note ? '<section><p class="p-sub">' + (VIEWER && VIEWER.team ? "Their note" : "Your note") + '</p><p class="p-lede" style="margin:0">' + esc(m.decision.note) + "</p></section>" : "") +
+        (m.decision.note ? '<section><p class="p-sub">' + (TEAM ? "Their note" : "Your note") + '</p><p class="p-lede" style="margin:0">' + esc(m.decision.note) + "</p></section>" : "") +
         '<div><button class="p-link" type="button" data-action="zoom" data-set="slides" data-i="' + li + '">See all three directions' + I.right + "</button></div>";
     }
 
@@ -688,7 +702,7 @@
         '<span class="sh-acts">' + (TEAM ? '<button class="sh-x" type="button" data-action="unshare" data-id="' + esc(x.id) + '">Remove</button>' : "") + get + "</span></div>" +
       (x.note ? '<p class="sh-note">' + esc(x.note) + "</p>" : "") +
       '<div class="sh-thread">' + cs.map(function (c) {
-        var mineC = VIEWER && c.author === VIEWER.email;
+        var mineC = !asClient && VIEWER && c.author === VIEWER.email;
         var who = c.from_team ? "Horizon Symmetry" : mineC ? "You" : (c.author_name || "Client");
         return '<div class="sh-c' + (c.from_team ? " is-team" : "") + '"><p class="sh-c__who">' + esc(who) +
           "<span>" + esc(F_WHEN.format(new Date(c.created_at))) + "</span>" +
@@ -826,7 +840,7 @@
         (st ? '<span class="side__state' + (st.action ? " is-action" : "") + '">' + (st.action ? '<span class="p-dot"></span>' : "") + esc(st.text) + "</span>" : "<span></span>") +
         "</a></li>";
     }).join("");
-    var studio = !PREVIEW ? "" :
+    var studio = !PREVIEW || asClient ? "" :
       '<div class="studio" role="group" aria-label="Studio preview"><p class="studio__label">Studio preview<span>only you see this</span></p>' +
       (C.preview || []).map(function (s) {
         return '<button type="button" data-action="stage" data-stage="' + s.id + '" aria-pressed="' + (s.id === stageId) + '"><i></i>' + esc(s.label) + "</button>";
@@ -842,7 +856,7 @@
       (!VIEWER ? "" :
         '<div class="side__acct"><p class="side__who">' + esc(VIEWER.name || VIEWER.email) +
         (VIEWER.name ? "<span>" + esc(VIEWER.email) + "</span>" : "") + "</p>" +
-        '<div class="side__acts">' + (VIEWER.team ? '<a href="space">All clients</a>' : "") +
+        '<div class="side__acts">' + (TEAM ? '<a href="space">All clients</a>' : "") +
         '<button type="button" data-action="sign-out">Log out</button></div></div>') +
       '<nav class="side__legal" aria-label="Legal"><a href="../privacy.html">Privacy</a><a href="../terms.html">Terms</a><a href="../cookies.html">Cookies</a></nav>' +
       "</div>";
@@ -867,7 +881,7 @@
     if (v !== shown) fresh = true;
     shown = v;
     $("#side").innerHTML = renderSide(M, v);
-    $("#view").innerHTML = VIEWS[v].render(M);
+    $("#view").innerHTML = asBar() + VIEWS[v].render(M);
     $("#view").setAttribute("aria-label", VIEWS[v].label);
     $("#menu-dot").hidden = !M.needsClient;
     document.title = (v === "home" ? "" : VIEWS[v].label + " · ") + C.name + " · Client space · Horizon Symmetry";
@@ -1280,6 +1294,14 @@
       case "sign-out":
         window.HSAuth.signOut().then(function () { location.replace("login"); });
         break;
+      case "as-client":
+        asClient = !asClient;
+        TEAM = IS_TEAM && !asClient;
+        shareOpen = false;
+        try { if (asClient) sessionStorage.setItem(AS_KEY, "1"); else sessionStorage.removeItem(AS_KEY); } catch (err) { /* private mode */ }
+        render();
+        toast(asClient ? "This is " + C.name + "'s view." : "Back to the studio view.");
+        break;
       case "share-open":
         shareOpen = !shareOpen;
         render();
@@ -1399,6 +1421,7 @@
     var id = f.dataset.item, box = f.querySelector("textarea"), body = box.value.trim();
     var it = SH.items.filter(function (x) { return x.id === id; })[0];
     if (!it || busy) return;
+    if (asClient) { toast("You're seeing it as " + C.name + ". Switch back to the studio view to reply."); return; }
     if (!body) { box.focus(); return; }
     busy = true;
     var btn = f.querySelector("button");
