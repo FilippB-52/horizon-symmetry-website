@@ -13,6 +13,8 @@
 
 import { PGlite } from "@electric-sql/pglite";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const SQL = readFileSync(new URL("../supabase.sql", import.meta.url), "utf8");
 
@@ -91,9 +93,9 @@ const SEED = `
   insert into public.client_items (id, client_id, section, kind, title, url, added_by) values
     ('${I.crude}', 'crude', 'First build', 'link', 'Site preview', 'https://example.test', 'team@hs.test'),
     ('${I.other}', 'other', 'First build', 'link', 'Other preview', 'https://other.test', 'team@hs.test');
-  insert into public.client_comments (id, item_id, client_id, author, author_name, from_team, body) values
-    ('${I.teamNote}', '${I.crude}', 'crude', 'team@hs.test', 'Horizon Symmetry', true, 'Here it is'),
-    ('${I.otherNote}', '${I.other}', 'other', 'someone@other.test', 'Someone', false, 'a note only Other may read');
+  insert into public.client_comments (id, client_id, section, author, author_name, from_team, body) values
+    ('${I.teamNote}', 'crude', 'First build', 'team@hs.test', 'Horizon Symmetry', true, 'Here it is'),
+    ('${I.otherNote}', 'other', 'First build', 'someone@other.test', 'Someone', false, 'a note only Other may read');
 `;
 
 async function fresh(sql) {
@@ -205,15 +207,17 @@ const CHECKS = [
   ["team removes an item", "team", `delete from public.client_items where id = '${I.crude}'`, r => r.affected === 1],
   ["unconfirmed signup sees nothing shared", "squat", "select title from public.client_items", r => rowsIs(r, 0)],
   ["logged-out visitor can't read shared items", "anon", "select title from public.client_items", denied],
-  ["client comments, signed as themselves whatever they send", "client", `insert into public.client_comments (item_id, client_id, author, author_name, from_team, body) values ('${I.crude}', 'crude', 'team@hs.test', 'Horizon Symmetry', true, 'Can the logo be bigger?') returning author, from_team, author_name`, r => r.rows?.[0]?.author === "client@crude.test" && r.rows[0].from_team === false && r.rows[0].author_name === "client"],
-  ["a comment lands in its item's space, not the one it names", "client", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'other', 'hi') returning client_id`, r => r.rows?.[0]?.client_id === "crude"],
-  ["client can't comment on another client's item", "client", `insert into public.client_comments (item_id, client_id, body) values ('${I.other}', 'other', 'hi')`, r => /row-level security/.test(r.error || "")],
+  ["client comments under a heading, signed as themselves whatever they send", "client", `insert into public.client_comments (client_id, section, author, author_name, from_team, body) values ('crude', 'First build', 'team@hs.test', 'Horizon Symmetry', true, 'Can the logo be bigger?') returning author, from_team, author_name`, r => r.rows?.[0]?.author === "client@crude.test" && r.rows[0].from_team === false && r.rows[0].author_name === "client"],
+  ["client can't comment into another client's space", "client", `insert into public.client_comments (client_id, section, body) values ('other', 'First build', 'hi')`, r => /row-level security/.test(r.error || "")],
+  ["a long comment (paragraphs) is fine", "client", `insert into public.client_comments (client_id, section, body) values ('crude', 'First build', repeat('A paragraph of feedback. ', 300))`, r => r.affected === 1],
+  ["a comment needs a heading", "client", `insert into public.client_comments (client_id, body) values ('crude', 'hi')`, r => /null value|not-null/.test(r.error || "")],
+  ["removing an item keeps the comments under its heading", "team", [`delete from public.client_items where id = '${I.crude}'`, "select body from public.client_comments where client_id = 'crude'"], r => !r.error && r.rows.map(x => x.body).join(",") === "Here it is"],
   ["client reads only their own space's comments", "client", "select body from public.client_comments", r => !r.error && r.rows.map(x => x.body).join(",") === "Here it is"],
-  ["team's reply is marked as the team", "team", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'Yes, done') returning from_team, author_name`, r => r.rows?.[0]?.from_team === true && r.rows[0].author_name === "Horizon Symmetry"],
+  ["team's reply is marked as the team", "team", `insert into public.client_comments (client_id, section, body) values ('crude', 'First build', 'Yes, done') returning from_team, author_name`, r => r.rows?.[0]?.from_team === true && r.rows[0].author_name === "Horizon Symmetry"],
   ["client can't delete the team's comment", "client", `delete from public.client_comments where id = '${I.teamNote}'`, r => r.affected === 0 && !r.error],
-  ["client deletes their own comment", "client", [`insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'oops')`, "delete from public.client_comments where body = 'oops'"], r => r.affected === 1],
-  ["unconfirmed signup can't comment", "squat", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'hi')`, r => /row-level security/.test(r.error || "")],
-  ["logged-out visitor can't comment", "anon", `insert into public.client_comments (item_id, client_id, body) values ('${I.crude}', 'crude', 'hi')`, denied],
+  ["client deletes their own comment", "client", [`insert into public.client_comments (client_id, section, body) values ('crude', 'First build', 'oops')`, "delete from public.client_comments where body = 'oops'"], r => r.affected === 1],
+  ["unconfirmed signup can't comment", "squat", `insert into public.client_comments (client_id, section, body) values ('crude', 'First build', 'hi')`, r => /row-level security/.test(r.error || "")],
+  ["logged-out visitor can't comment", "anon", `insert into public.client_comments (client_id, section, body) values ('crude', 'First build', 'hi')`, denied],
 ];
 
 function ids(r) { return (r.rows || []).map(x => x.id).join(","); }
@@ -263,13 +267,12 @@ drop policy if exists "team adds items"`),
     what: "a comment keeps whatever author the browser sends",
     sql: swap(SQL, `    new.author := me;
     new.from_team := public.is_team();`, ``),
-    mustFail: ["client comments, signed as themselves whatever they send"],
+    mustFail: ["client comments under a heading, signed as themselves whatever they send"],
   },
   {
-    what: "a comment trusts the space the browser names",
-    sql: swap(SQL, `  select i.client_id into new.client_id from public.client_items i where i.id = new.item_id;
-`, ``),
-    mustFail: ["a comment lands in its item's space, not the one it names"],
+    what: "the comment rule forgets whose space it is",
+    sql: swap(SQL, `with check (public.can_open(client_id) and author = public.my_email());`, `with check (author = public.my_email());`),
+    mustFail: ["client can't comment into another client's space"],
   },
   {
     what: "the upload rule forgets to check it is the team",
@@ -341,6 +344,28 @@ for (const s of SABOTAGE) {
   const missed = s.mustFail.filter(n => !tripped.includes(n));
   if (missed.length) sabotageOk = false;
   console.log(`${missed.length ? "FAIL" : "pass"}  sabotage caught: ${s.what}${missed.length ? `  (not caught by: ${missed.join("; ")})` : ""}`);
+}
+
+// ---- a project that ran the first version (comments on one item) keeps its comments
+const FIRST = execFileSync("git", ["-C", fileURLToPath(new URL("../..", import.meta.url)), "show", "e32cd7c:portal-setup/supabase.sql"], { encoding: "utf8" });
+{
+  const db = new PGlite();
+  await db.exec(STAND_INS);
+  await db.exec(FIRST);
+  await db.exec(`insert into public.clients (id, name, emails, record) values ('ll', 'LL', array['x@ll.test'], '{}');
+    insert into public.client_items (id, client_id, section, kind, title, url, added_by) values ('${I.crude}', 'll', 'First build', 'link', 'Site', 'https://x.test', 'team@hs.test');
+    insert into public.client_comments (item_id, client_id, author, author_name, from_team, body) values ('${I.crude}', 'll', 'x@ll.test', 'Pablo', false, 'Love the hero');`);
+  await db.exec(SQL);
+  await db.exec(SQL);
+  const r = await db.query("select section, item_id, body from public.client_comments");
+  const kept = r.rows.length === 1 && r.rows[0].section === "First build" && r.rows[0].item_id === null && r.rows[0].body === "Love the hero";
+  await db.exec(`delete from public.client_items where id = '${I.crude}'`);
+  const after = await db.query("select count(*)::int n from public.client_comments");
+  const survives = after.rows[0].n === 1;
+  if (!kept || !survives) failed++;
+  console.log(`${kept ? "pass" : "FAIL"}  upgrade: a comment written on an item moves under that item's heading${kept ? "" : `  (got ${JSON.stringify(r.rows)})`}`);
+  console.log(`${survives ? "pass" : "FAIL"}  upgrade: removing that item afterwards keeps the comment`);
+  await db.close();
 }
 
 process.exit(failed || !sabotageOk ? 1 : 0);

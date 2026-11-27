@@ -106,8 +106,18 @@ async function walk(engine, tag, { oldCode } = {}) {
     out.clientForm = await page.locator("[data-action=share-open]").count();
     out.clientRemove = await page.locator("[data-action=unshare]").count();
     out.clientNote = await page.locator(".sh-note").first().textContent().catch(() => "");
-    const box = page.locator(".sh-item").first().locator("textarea");
-    await box.fill("Can we make the hero photo warmer?");
+    // one big box under the heading, after the items
+    out.layout = await page.evaluate(() => {
+      const g = document.querySelector(".sh-group"), kids = Array.from(g.children).map(k => k.className);
+      const t = g.querySelector(".sh-talk textarea");
+      return { order: kids.join(" > "), boxes: document.querySelectorAll(".sh-talk textarea").length, perItem: document.querySelectorAll(".sh-item textarea").length, h: t.getBoundingClientRect().height };
+    });
+    const box = page.locator(".sh-talk textarea").first();
+    await box.click();
+    await page.keyboard.type("Can we make the hero photo warmer?");
+    // Enter and Shift+Enter start new lines; nothing is sent
+    for (let i = 0; i < 6; i++) { await page.keyboard.press(i % 2 ? "Shift+Enter" : "Enter"); await page.keyboard.type("And another thought, line " + (i + 2) + "."); }
+    out.typed = await page.evaluate(() => { const t = document.querySelector(".sh-talk textarea"); return { lines: t.value.split("\n").length, h: t.getBoundingClientRect().height, scroll: t.scrollHeight, client: t.clientHeight, sent: document.querySelectorAll(".sh-c").length }; });
     await page.keyboard.press(process.platform === "darwin" ? "Meta+Enter" : "Control+Enter");
     await page.waitForSelector(".sh-c", { timeout: 6000 });
     out.clientComment = await page.locator(".sh-c").first().innerText();
@@ -121,23 +131,24 @@ async function walk(engine, tag, { oldCode } = {}) {
     out.listNote = await page.locator('.gate__list li[data-id="demo"] .gate__waiting').textContent().catch(() => "");
     await openSpace(page, "demo");
     out.teamNav = await page.evaluate(() => Array.from(document.querySelectorAll("#side .side__nav li")).map(li => li.textContent.replace(/\s+/g, " ").trim()).join(" | "));
-    out.replyChip = await page.locator(".sh-item .p-chip.is-action").count();
-    const tbox = page.locator(".sh-item").first().locator("textarea");
+    out.replyChip = await page.locator(".sh-head .p-chip.is-action").count();
+    const tbox = page.locator(".sh-talk textarea").first();
     await tbox.fill("Yes, warming it up today.");
-    await page.locator(".sh-item").first().locator(".sh-reply button").click();
+    await page.locator(".sh-talk .sh-reply button[type=submit]").first().click();
     await page.waitForFunction(() => document.querySelectorAll(".sh-c").length === 2, null, { timeout: 6000 }).catch(() => {});
     out.teamReply = await page.locator(".sh-c.is-team").first().innerText().catch(() => "");
-    out.replyChipAfter = await page.locator(".sh-item .p-chip.is-action").count();
+    out.replyChipAfter = await page.locator(".sh-head .p-chip.is-action").count();
     // remove one file
     await page.locator('.sh-item:has-text("Logo files") [data-action=unshare]').click();
     await page.waitForFunction(() => document.querySelectorAll(".sh-item").length === 2, null, { timeout: 6000 }).catch(() => {});
     out.afterRemove = await page.$$eval(".sh-item .file__label", els => els.map(e => e.childNodes[0].textContent));
+    out.commentsAfterRemove = await page.locator(".sh-c").count();
     await shot("4-team-replied");
     // the team switches to exactly what the client sees, and back
     await page.click("[data-action=as-client]");
     await page.waitForTimeout(300);
     out.asClient = { add: await page.locator("[data-action=share-open]").count(), remove: await page.locator("[data-action=unshare]").count(),
-      studio: await page.locator(".studio").count(), reply: await page.locator(".sh-item .p-chip.is-action").count(),
+      studio: await page.locator(".studio").count(), reply: await page.locator(".sh-head .p-chip.is-action").count(),
       del: await page.locator(".sh-c [data-action=uncomment]").count(), bar: await page.locator(".asbar").innerText() };
     await page.reload();
     await page.waitForFunction(() => document.getElementById("gate")?.hidden === true, null, { timeout: 8000 }).catch(() => {});
@@ -174,13 +185,17 @@ function checks(tag, o) {
   check(`${tag}: the client sees all three, with the note`, (o.clientTitles || []).length === 3 && o.clientNote === "Password: lens2026", { t: o.clientTitles, n: o.clientNote });
   check(`${tag}: the client sees them marked new in the menu`, /Files\s*New/.test(o.clientNav || ""), o.clientNav);
   check(`${tag}: the client can't add or remove anything`, o.clientForm === 0 && o.clientRemove === 0, { form: o.clientForm, remove: o.clientRemove });
-  check(`${tag}: the client's comment shows as theirs`, /^You/.test(o.clientComment || "") && /hero photo warmer/.test(o.clientComment || ""), o.clientComment);
+  check(`${tag}: items first, then one comment section under the heading`, !!o.layout && /^sh-head > sh-items > sh-talk$/.test(o.layout.order) && o.layout.boxes === 1 && o.layout.perItem === 0, o.layout);
+  check(`${tag}: the comment box starts big (about five lines or more)`, !!o.layout && o.layout.h >= 150, o.layout && o.layout.h);
+  check(`${tag}: Enter and Shift+Enter add lines without sending`, !!o.typed && o.typed.lines === 7 && o.typed.sent === 0, o.typed);
+  check(`${tag}: the box grows with what is written, never scrolls inside`, !!o.typed && o.typed.h > o.layout.h && o.typed.scroll <= o.typed.client + 4, { before: o.layout && o.layout.h, after: o.typed });
+  check(`${tag}: the client's comment shows as theirs`, /^You/.test(o.clientComment || "") && /hero photo warmer/.test(o.clientComment || "") && /line 7/.test(o.clientComment || ""), o.clientComment);
   check(`${tag}: the team's client list says a comment is waiting`, /New comment/.test(o.listNote || ""), o.listNote);
-  check(`${tag}: the team sees Reply in the menu and on the item`, /Files\s*Reply/.test(o.teamNav || "") && o.replyChip === 1, { nav: o.teamNav, chip: o.replyChip });
+  check(`${tag}: the team sees Reply in the menu and on the heading`, /Files\s*Reply/.test(o.teamNav || "") && o.replyChip === 1, { nav: o.teamNav, chip: o.replyChip });
   check(`${tag}: the team's answer is signed Horizon Symmetry`, /^Horizon Symmetry/.test(o.teamReply || "") && /warming it up/.test(o.teamReply || "") && o.replyChipAfter === 0, { reply: o.teamReply, chip: o.replyChipAfter });
   check(`${tag}: seen as the client, nothing team-only shows`, !!o.asClient && o.asClient.add === 0 && o.asClient.remove === 0 && o.asClient.studio === 0 && o.asClient.reply === 0 && o.asClient.del === 0 && /exactly what/.test(o.asClient.bar), o.asClient);
   check(`${tag}: the client view survives a reload, and switches back`, o.asClientKept === 1 && !!o.backToStudio && o.backToStudio.add === 1 && o.backToStudio.remove === 2, { kept: o.asClientKept, back: o.backToStudio });
-  check(`${tag}: the team removes a file`, (o.afterRemove || []).join(",") === "Website preview,Brand book v1.1", o.afterRemove);
+  check(`${tag}: the team removes a file, the conversation stays`, (o.afterRemove || []).join(",") === "Website preview,Brand book v1.1" && o.commentsAfterRemove === 2, { items: o.afterRemove, comments: o.commentsAfterRemove });
   check(`${tag}: the client sees the answer and can delete only their own`, (o.clientSees || []).length === 2 && o.clientDeleteButtons === 1, { sees: o.clientSees, del: o.clientDeleteButtons });
   check(`${tag}: their own comment goes, ours stays`, (o.clientAfterDelete || []).length === 1 && /Horizon Symmetry/.test(o.clientAfterDelete[0]), o.clientAfterDelete);
   check(`${tag}: no page errors`, !o.crashed && o.errors.length === 0, { crashed: o.crashed, errors: o.errors });

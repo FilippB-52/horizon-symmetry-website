@@ -128,11 +128,12 @@ create policy "client or team can read files" on storage.objects
 -- What the team puts in a client's Files view from the space itself,
 -- with no dashboard: a file (into the bucket above, under the client's
 -- folder) or a link, under a heading such as "First build", with an
--- optional note (a password, what to look at). The client comments on
--- each one and the team answers in the same thread.
+-- optional note (a password, what to look at). Under each heading, after
+-- its items, one comment thread: the client writes, the team answers.
 --
 --   client_items     team adds and removes, client and team read
---   client_comments  client and team write, each reads only their space's
+--   client_comments  one thread per heading (client_id + section);
+--                    client and team write, each reads only their space's
 --
 -- Who wrote a comment, and whether it was the team, is set by the
 -- database from the login, never taken from the browser.
@@ -157,18 +158,37 @@ create table if not exists public.client_items (
 
 create table if not exists public.client_comments (
   id          uuid primary key default gen_random_uuid(),
-  item_id     uuid not null references public.client_items (id) on delete cascade,
   client_id   text not null references public.clients (id) on delete cascade,
+  section     text,
+  item_id     uuid,
   author      text,
   author_name text not null default '',
   from_team   boolean not null default false,
-  body        text not null check (length(trim(body)) between 1 and 4000),
+  body        text not null,
   created_at  timestamptz not null default now()
 );
 
+-- 27 Nov 2026: comments moved from one item to the whole heading. A
+-- project that ran the first version keeps every comment, now under its
+-- item's heading, and removing an item no longer takes comments with it.
+-- On a new project these lines change nothing.
+alter table public.client_comments add column if not exists section text;
+update public.client_comments c set section = i.section
+  from public.client_items i where c.item_id = i.id and c.section is null;
+delete from public.client_comments where section is null;
+alter table public.client_comments drop constraint if exists client_comments_item_id_fkey;
+alter table public.client_comments alter column item_id drop not null;
+update public.client_comments set item_id = null where item_id is not null;
+alter table public.client_comments alter column section set not null;
+alter table public.client_comments drop constraint if exists client_comments_section_check;
+alter table public.client_comments add constraint client_comments_section_check check (length(trim(section)) between 1 and 80);
+-- room for paragraphs: about 1,500 words
+alter table public.client_comments drop constraint if exists client_comments_body_check;
+alter table public.client_comments add constraint client_comments_body_check check (length(trim(body)) between 1 and 10000);
+drop index if exists public.client_comments_item;
+
 create index if not exists client_items_client on public.client_items (client_id, created_at);
-create index if not exists client_comments_item on public.client_comments (item_id, created_at);
-create index if not exists client_comments_client on public.client_comments (client_id, created_at);
+create index if not exists client_comments_section on public.client_comments (client_id, section, created_at);
 
 -- Fills in who did it. Signed in, the login wins over anything sent;
 -- only a paste in this editor (no login) keeps what it was given.
@@ -189,7 +209,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare me text := public.my_email();
 begin
-  select i.client_id into new.client_id from public.client_items i where i.id = new.item_id;
+  new.item_id := null;
   if me is not null then
     new.author := me;
     new.from_team := public.is_team();

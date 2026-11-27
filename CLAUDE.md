@@ -96,7 +96,9 @@ client. Connection steps, SQL and everyday tasks: `portal-setup/README.md`.
   `client-files/<id>/shared/` (team only); `HSAuth.shared/share/unshare/comment/uncomment/activity`
   in `portal-auth.js` (live, test and off); `renderShareForm`, `renderShared`, `renderItem` in
   `portal.js`; the "New comment" line in the client list in `portal-gate.js`. Missing tables
-  answer `{ missing: true }`, never an error. `shared.test.mjs` walks it both sides.
+  answer `{ missing: true }`, never an error. Since 27 Nov evening comments are one thread per
+  heading (`client_comments.section`, `renderTalk`), not per item; `supabase.sql` moves old ones.
+  `shared.test.mjs` walks it both sides.
 - **A new client is never left on a dead screen** (18 Nov 2026). "Check your email" keeps trying
   to log in with the password just typed (in memory only) every 15 s and when the tab regains
   focus, and has a Log in button; a refresh keeps that screen (sessionStorage `hs:signup:sent`,

@@ -42,7 +42,7 @@
 
   /* shared items and comments: the columns the space reads */
   var ITEM_COLS = "id, client_id, section, kind, title, note, url, path, file_name, size, added_by, created_at";
-  var COMMENT_COLS = "id, item_id, client_id, author, author_name, from_team, body, created_at";
+  var COMMENT_COLS = "id, client_id, section, author, author_name, from_team, body, created_at";
   function missingTable(e) {
     var code = (e && e.code) || "", msg = (e && e.message) || "";
     return code === "PGRST205" || code === "42P01" || /schema cache|does not exist/i.test(msg);
@@ -273,14 +273,17 @@
             c.from("client_items").select(ITEM_COLS).eq("client_id", id).order("created_at"),
             c.from("client_comments").select(COMMENT_COLS).eq("client_id", id).order("created_at")
           ]).then(function (r) {
-            var e = r[0].error || r[1].error;
+            /* the items are what matter: a comments table that can't be read
+               (mid-update) costs the thread, never the files */
+            var e = r[0].error;
             if (e) { if (missingTable(e)) return { missing: true, items: [], comments: [] }; throw e; }
             var items = r[0].data || [];
+            var comments = r[1].error ? [] : r[1].data || [];
             return Promise.all(items.map(function (x) {
               if (x.kind !== "file") { x.href = x.url; return null; }
               return c.storage.from(BUCKET).createSignedUrl(x.path, TTL, { download: x.file_name || true })
                 .then(function (s) { x.href = (s.data && s.data.signedUrl) || ""; }, function () { x.href = ""; });
-            })).then(function () { return { items: items, comments: r[1].data || [] }; });
+            })).then(function () { return { items: items, comments: comments, talkDown: !!r[1].error }; });
           });
         });
       },
@@ -319,10 +322,11 @@
           });
         });
       },
-      /* who wrote it, and whether it was the team, the database decides */
-      comment: function (item, body) {
+      /* one thread per heading. Who wrote it, and whether it was the
+         team, the database decides */
+      comment: function (id, section, body) {
         return client().then(function (c) {
-          return c.from("client_comments").insert({ item_id: item.id, client_id: item.client_id, body: body }).select(COMMENT_COLS).single();
+          return c.from("client_comments").insert({ client_id: id, section: section, body: body }).select(COMMENT_COLS).single();
         }).then(function (r) { if (r.error) throw r.error; return r.data; });
       },
       uncomment: function (cm) {
@@ -526,16 +530,14 @@
         if (!teamOnly()) return Promise.reject(new Error("the studio only"));
         var d = read(SHARED, { items: [], comments: [] });
         d.items = d.items.filter(function (x) { return x.id !== item.id; });
-        d.comments = d.comments.filter(function (x) { return x.item_id !== item.id; });
         write(SHARED, d);
         return later();
       },
-      comment: function (item, body) {
+      comment: function (id, section, body) {
         var u = me(), d = read(SHARED, { items: [], comments: [] });
-        var it = d.items.filter(function (x) { return x.id === item.id; })[0];
-        if (!u || !it || !mine().some(function (c) { return c.id === it.client_id; })) return Promise.reject(new Error("row-level security"));
+        if (!u || !section || !mine().some(function (c) { return c.id === id; })) return Promise.reject(new Error("row-level security"));
         var team = TEAM.indexOf(u.email) > -1;
-        var row = { id: randomId(), item_id: it.id, client_id: it.client_id, author: u.email,
+        var row = { id: randomId(), client_id: id, section: section, author: u.email,
           author_name: team ? "Horizon Symmetry" : (u.name || u.email.split("@")[0]), from_team: team, body: body, created_at: new Date().toISOString() };
         d.comments.push(row);
         write(SHARED, d);

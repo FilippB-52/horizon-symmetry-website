@@ -364,16 +364,22 @@
   var busy = false;
   var F_WHEN = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
-  function sharedOf(id) { return SH.comments.filter(function (c) { return c.item_id === id; }); }
-  /* the client's word is the last one on this item: the team owes a reply */
-  function waitingOnUs(id) {
-    var cs = sharedOf(id);
-    return cs.length && !cs[cs.length - 1].from_team;
+  /* one comment thread per heading, under everything shared there */
+  function talkOf(section) { return SH.comments.filter(function (c) { return c.section === section; }); }
+  /* the client's word is the last one under this heading: the team owes a reply */
+  function waitingOnUs(section) {
+    var cs = talkOf(section);
+    return cs.length > 0 && !cs[cs.length - 1].from_team;
+  }
+  var MAC = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent || "");
+  function grow(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + 2 + "px";
   }
   function recent(iso) { return (Date.now() - new Date(iso).getTime()) / 864e5 < 3; }
   function sections() {
     var seen = {}, out = [];
-    SH.items.forEach(function (x) { if (!seen[x.section]) { seen[x.section] = 1; out.push(x.section); } });
+    SH.items.concat(SH.comments).forEach(function (x) { if (!seen[x.section]) { seen[x.section] = 1; out.push(x.section); } });
     return out;
   }
   function size(n) {
@@ -492,7 +498,7 @@
     files: {
       label: "Files", icon: "files",
       state: function (m) {
-        if (TEAM && SH.items.some(function (x) { return waitingOnUs(x.id); })) return { action: true, text: "Reply" };
+        if (TEAM && sections().some(waitingOnUs)) return { action: true, text: "Reply" };
         if (!TEAM && (SH.items.some(function (x) { return recent(x.created_at); }) ||
           SH.comments.some(function (c) { return c.from_team && recent(c.created_at); }))) return { action: true, text: "New" };
         if (SH.items.length) return { text: SH.items.length + " shared" };
@@ -674,19 +680,45 @@
 
   /* Shared items, newest heading first, each with its comment thread. */
   function renderShared() {
-    if (!SH.items.length) return "";
-    var groups = [];
-    SH.items.forEach(function (x) {
-      var g = groups.filter(function (q) { return q.name === x.section; })[0];
-      if (!g) groups.push(g = { name: x.section, items: [], last: "" });
-      g.items.push(x);
-      if (x.created_at > g.last) g.last = x.created_at;
+    if (!SH.items.length && !SH.comments.length) return "";
+    var groups = sections().map(function (name) {
+      var items = SH.items.filter(function (x) { return x.section === name; });
+      var last = items.concat(talkOf(name)).reduce(function (a, x) { return x.created_at > a ? x.created_at : a; }, "");
+      return { name: name, items: items, last: last };
     });
     groups.sort(function (a, b) { return a.last < b.last ? 1 : -1; });
     return '<div class="shared">' + groups.map(function (g) {
-      return '<section class="sh-group"><h2 class="sh-head">' + esc(g.name) + "</h2>" +
-        g.items.map(renderItem).join("") + "</section>";
+      var chip = TEAM && waitingOnUs(g.name) ? ' <span class="p-chip is-action">Reply</span>' : "";
+      return '<section class="sh-group"><h2 class="sh-head">' + esc(g.name) + chip + "</h2>" +
+        (g.items.length ? '<div class="sh-items">' + g.items.map(renderItem).join("") + "</div>"
+          : '<p class="p-note sh-gone">Everything under this heading was taken down. The conversation stays.</p>') +
+        renderTalk(g.name) + "</section>";
     }).join("") + "</div>";
+  }
+
+  /* The conversation about everything under one heading: what was said,
+     then a box big enough to write paragraphs in. It grows as you type;
+     Enter starts a new line, Cmd or Ctrl + Enter (or Send) sends. */
+  function renderTalk(section) {
+    var cs = talkOf(section), key = "sec:" + section;
+    var place = TEAM ? (cs.length ? "Write a reply." : "Write to " + C.name + " about everything above.")
+      : cs.length ? "Write back. As much as you like."
+      : "Tell us what you think of everything above: what works, what doesn't, what you'd change. Write as much as you like.";
+    return '<div class="sh-talk"><p class="sh-talk__title">' + (TEAM || cs.length ? "Comments on " : "Your comments on ") + esc(section) + "</p>" +
+      (cs.length ? '<div class="sh-thread">' + cs.map(function (c) {
+        var mineC = !asClient && VIEWER && c.author === VIEWER.email;
+        var who = c.from_team ? "Horizon Symmetry" : mineC ? "You" : (c.author_name || "Client");
+        return '<div class="sh-c' + (c.from_team ? " is-team" : "") + '"><p class="sh-c__who">' + esc(who) +
+          "<span>" + esc(F_WHEN.format(new Date(c.created_at))) + "</span>" +
+          (mineC || TEAM ? '<button class="sh-x" type="button" data-action="uncomment" data-id="' + esc(c.id) + '">Delete</button>' : "") +
+          '</p><p class="sh-c__body">' + esc(c.body) + "</p></div>";
+      }).join("") + "</div>" : "") +
+      '<form class="sh-reply" data-section="' + esc(section) + '">' +
+        '<textarea class="field sh-compose" rows="5" maxlength="10000" data-draft="' + esc(key) + '" aria-label="Comment on ' + esc(section) + '" placeholder="' +
+          esc(place) + '">' + esc(drafts[key] || "") + "</textarea>" +
+        '<div class="sh-reply__row"><span class="p-note">Enter starts a new line. ' + (MAC ? "\u2318" : "Ctrl") + " + Enter sends.</span>" +
+        '<button class="cta cta--solid" type="submit"><span class="cta__label">Send</span><span class="cta__arrow">' + I.right + "</span></button></div>" +
+      "</form></div>";
   }
 
   function renderItem(x) {
@@ -694,26 +726,12 @@
     var get = !x.href ? '<span class="file__wait">Not available</span>'
       : x.kind === "link" ? '<a class="file__get" href="' + esc(x.href) + '" target="_blank" rel="noopener noreferrer">Open' + I.out + "</a>"
       : '<a class="file__get" href="' + esc(x.href) + '" download="' + esc(x.file_name || "") + '">Download' + I.down + "</a>";
-    var chip = TEAM && waitingOnUs(x.id) ? '<span class="p-chip is-action">Reply</span>'
-      : !TEAM && recent(x.created_at) ? '<span class="p-chip is-new">New</span>' : "";
-    var cs = sharedOf(x.id);
+    var chip = !TEAM && recent(x.created_at) ? '<span class="p-chip is-new">New</span>' : "";
     return '<article class="sh-item" id="it-' + esc(x.id) + '">' +
       '<div class="file"><span><span class="file__label">' + esc(x.title) + chip + '</span><span class="file__meta">' + esc(meta) + "</span></span>" +
         '<span class="sh-acts">' + (TEAM ? '<button class="sh-x" type="button" data-action="unshare" data-id="' + esc(x.id) + '">Remove</button>' : "") + get + "</span></div>" +
       (x.note ? '<p class="sh-note">' + esc(x.note) + "</p>" : "") +
-      '<div class="sh-thread">' + cs.map(function (c) {
-        var mineC = !asClient && VIEWER && c.author === VIEWER.email;
-        var who = c.from_team ? "Horizon Symmetry" : mineC ? "You" : (c.author_name || "Client");
-        return '<div class="sh-c' + (c.from_team ? " is-team" : "") + '"><p class="sh-c__who">' + esc(who) +
-          "<span>" + esc(F_WHEN.format(new Date(c.created_at))) + "</span>" +
-          (mineC || TEAM ? '<button class="sh-x" type="button" data-action="uncomment" data-id="' + esc(c.id) + '">Delete</button>' : "") +
-          '</p><p class="sh-c__body">' + esc(c.body) + "</p></div>";
-      }).join("") +
-      '<form class="sh-reply" data-item="' + esc(x.id) + '">' +
-        '<textarea class="field sh-field" rows="1" maxlength="4000" data-draft="' + esc(x.id) + '" aria-label="Comment on ' + esc(x.title) + '" placeholder="' +
-          (TEAM ? (cs.length ? "Reply" : "Add a comment") : cs.length ? "Reply" : "Comment on this") + '">' + esc(drafts[x.id] || "") + "</textarea>" +
-        '<button class="file__get" type="submit">Send</button></form>' +
-      "</div></article>";
+      "</article>";
   }
 
   function soon(rest) {
@@ -882,6 +900,7 @@
     shown = v;
     $("#side").innerHTML = renderSide(M, v);
     $("#view").innerHTML = asBar() + VIEWS[v].render(M);
+    $$("textarea[data-draft]").forEach(function (t) { if (t.value) grow(t); });
     $("#view").setAttribute("aria-label", VIEWS[v].label);
     $("#menu-dot").hidden = !M.needsClient;
     document.title = (v === "home" ? "" : VIEWS[v].label + " · ") + C.name + " · Client space · Horizon Symmetry";
@@ -1314,11 +1333,10 @@
       case "unshare":
         var ux = SH.items.filter(function (x) { return x.id === a.dataset.id; })[0];
         if (!ux || busy) return;
-        if (!confirm('Remove "' + ux.title + '" from ' + C.name + "'s files? Its comments go with it.")) return;
+        if (!confirm('Remove "' + ux.title + '" from ' + C.name + "'s files? The comments under its heading stay.")) return;
         busy = true;
         window.HSAuth.unshare(ux).then(function () {
           SH.items = SH.items.filter(function (x) { return x.id !== ux.id; });
-          SH.comments = SH.comments.filter(function (c) { return c.item_id !== ux.id; });
           render();
           toast("Removed.");
         }, function () { toast("That didn't work. Refresh and try again."); }).then(function () { busy = false; });
@@ -1418,17 +1436,16 @@
   }
 
   function sendComment(f) {
-    var id = f.dataset.item, box = f.querySelector("textarea"), body = box.value.trim();
-    var it = SH.items.filter(function (x) { return x.id === id; })[0];
-    if (!it || busy) return;
+    var section = f.dataset.section, box = f.querySelector("textarea"), body = box.value.trim();
+    if (!section || busy) return;
     if (asClient) { toast("You're seeing it as " + C.name + ". Switch back to the studio view to reply."); return; }
     if (!body) { box.focus(); return; }
     busy = true;
-    var btn = f.querySelector("button");
+    var btn = f.querySelector("button[type=submit]");
     btn.disabled = true;
-    window.HSAuth.comment(it, body).then(function (c) {
+    window.HSAuth.comment(C.id, section, body).then(function (c) {
       SH.comments.push(c);
-      delete drafts[id];
+      delete drafts["sec:" + section];
       render();
       toast(TEAM ? "Sent." : "Sent. We'll answer here.");
     }, function () {
@@ -1441,8 +1458,7 @@
     var el = e.target;
     if (el.dataset && el.dataset.draft) {
       drafts[el.dataset.draft] = el.value;
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + 2 + "px";
+      grow(el);
     }
   });
 

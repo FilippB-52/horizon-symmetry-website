@@ -106,8 +106,10 @@ this Mac and in Supabase. Back them up somewhere private if this Mac is the only
   account, open the client, Files, "Add a file or link for <client>". Pick a heading (the stage it
   belongs to; items with the same heading sit together), then a file (several at once, up to
   50 MB each) or a link with a title, and an optional note (a password, what to look at). The
-  client sees it at once and comments under it; we answer in the same thread. A client comment
-  we have not answered shows "Reply" on the item and in the menu, and "New comment" under their
+  client sees it at once. Under each heading, after its items, is one comment section with a big
+  box that grows as they write (Enter is a new line, Cmd/Ctrl + Enter or Send sends); we answer
+  in the same thread. Removing an item keeps the conversation. A client comment we have not
+  answered shows "Reply" on the heading and in the menu, and "New comment" under their
   name in All clients. Nobody is emailed about a comment yet (that waits for Resend), so look.
   Remove takes the item, its file and its comments away. Stored in `client_items` and
   `client_comments` in `supabase.sql` (team adds and removes; author and "from the team" are set

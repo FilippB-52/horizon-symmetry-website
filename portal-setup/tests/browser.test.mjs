@@ -81,7 +81,7 @@ async function notConnected(page) {
 }
 
 // ------------------------------------------------------------------ live mode
-async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false } = {}) {
+async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false, commentsDown = false } = {}) {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const log = { unexpected: [], localFiles: [], signed: 0 };
 
@@ -114,6 +114,8 @@ async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false } = {}) {
     if (p === "/rest/v1/clients" && req.method() === "PATCH") return r.fulfill({ status: 204, headers: cors });
     /* what the team shared in Files, and a comment on it */
     if (p === "/rest/v1/client_items" && req.method() === "GET") return json(r, u.searchParams.get("client_id") === "eq.crude" ? SHARED_ITEMS : []);
+    if (p === "/rest/v1/client_comments" && req.method() === "GET" && commentsDown)
+      return json(r, { code: "42703", details: null, hint: null, message: "column client_comments.section does not exist" }, 400);
     if (p === "/rest/v1/client_comments" && req.method() === "GET") return json(r, u.searchParams.get("client_id") === "eq.crude" ? SHARED_COMMENTS : []);
     if (p === "/storage/v1/object/sign/client-files" && req.method() === "POST") {
       if (storageDown) return json(r, { error: "down" }, 500);
@@ -156,7 +158,7 @@ async function live({ authJs = AUTH_JS, lib = LIB, storageDown = false } = {}) {
       title: e.querySelector(".file__label")?.textContent || "",
       href: e.querySelector(".file__get")?.getAttribute("href") || "",
       note: e.querySelector(".sh-note")?.textContent || "",
-      comments: Array.from(e.querySelectorAll(".sh-c__body")).map(c => c.textContent)
+      comments: Array.from(e.closest(".sh-group").querySelectorAll(".sh-talk .sh-c__body")).map(c => c.textContent)
     })));
     out = { ...out, imgs, links, waits, fonts, state, shared };
   }
@@ -169,7 +171,7 @@ const SHARED_ITEMS = [
   { id: "i-file", client_id: "crude", section: "First build", kind: "file", title: "Logo files", note: "", url: null, path: "crude/shared/x1/logo.zip", file_name: "Crude - Logo.zip", size: 120000, added_by: "team@hs.test", created_at: "2026-11-27T15:01:00Z" }
 ];
 const SHARED_COMMENTS = [
-  { id: "c1", item_id: "i-link", client_id: "crude", author: "team@hs.test", author_name: "Horizon Symmetry", from_team: true, body: "Here is your brand book.", created_at: "2026-11-27T15:02:00Z" }
+  { id: "c1", section: "First build", client_id: "crude", author: "team@hs.test", author_name: "Horizon Symmetry", from_team: true, body: "Here is your brand book.", created_at: "2026-11-27T15:02:00Z" }
 ];
 
 async function loadedImages(page) {
@@ -207,6 +209,9 @@ function liveChecks(tag, r) {
 
 const real = await live();
 for (const c of liveChecks("live", real)) check(...c);
+
+const mid = await live({ commentsDown: true });
+check("live, comments mid-update: the shared items still show", (mid.shared || []).length === 2 && mid.shared.every(x => x.comments.length === 0), mid.shared);
 
 const down = await live({ storageDown: true });
 check("live, storage down: the space still opens", down.opened, down.log.unexpected);
